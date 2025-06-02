@@ -18,6 +18,9 @@
         <a class="btn btn-secondary btn-lg" href="{{ route('vista.admin_modificar_categoria') }}">Modificar Precios y Stock</a>
         <a class="btn btn-secondary btn-lg" href="{{ route('vista.admin_historial') }}">Ver Historial de Pedidos</a>
         <a class="btn btn-secondary btn-lg" href="{{ route('vista.admin_compras') }}">Generar lista de Compras</a>
+        <a class="btn btn-secondary btn-lg" href="{{ route('vista.admin_agregar_producto') }}">Agregar Producto</a>
+        <a class="btn btn-secondary btn-lg" href="#">Agregar Promociones</a>
+        <a class="btn btn-secondary btn-lg" href="{{ route('vista.admin_gestion_usuarios') }}">Gestionar Usuarios</a>
 
     @elseif($user->rol === 'mesero')
         <h1>Bienvenido Mesero</h1>

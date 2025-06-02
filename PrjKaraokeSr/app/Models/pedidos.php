@@ -20,7 +20,11 @@ class pedidos extends Model
         'notas_adicionales',
     ];
 
-    protected $dates = ['fecha_hora_pedido'];
+    // Corregir el manejo de fechas
+    protected $casts = [
+        'fecha_hora_pedido' => 'datetime',
+        'total_pedido' => 'decimal:2',
+    ];
 
     public function mesa()
     {
@@ -41,5 +45,4 @@ class pedidos extends Model
     {
         return $this->hasOne(comprobantes::class, 'id_pedido');
     }
-
 }

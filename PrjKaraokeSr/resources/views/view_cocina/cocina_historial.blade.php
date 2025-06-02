@@ -15,9 +15,9 @@
                 <h4 class="mb-1">Mesa {{ $detalle->pedido->mesa->numero_mesa ?? 'N/A' }}</h4>
                 <small>Tiempo Aprox.: {{ $detalle->pedido->tiempo_aproximado ?? '20 min' }}</small>
               </div>
-              <form action="#" method="POST">
+              <form action="{{ route('cocina.pedido.listo', $detalle->id_pedido_detalle) }}" method="POST">
                 @csrf
-                <button type="submit" class="btn btn-danger" disabled>Listo</button>
+                <button type="submit" class="btn btn-success">Listo</button>
               </form>
             </div>
             <table class="table table-bordered mt-3">
