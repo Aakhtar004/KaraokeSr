@@ -160,8 +160,9 @@ document.getElementById('facturacionForm').addEventListener('submit', function(e
 
 function mostrarModalAcciones() {
     if (confirm('¿Qué quieres hacer?\nPresiona OK para Imprimir o Cancelar para Enviar al correo')) {
-        // Imprimir: redirigir a la vista previa del comprobante
-        window.location.href = `/factura/${comprobanteId}/vista-previa`;
+        // Imprimir: redirigir a la vista previa del comprobante usando la ruta de Laravel
+        const vistaPrevia = "{{ route('factura.vista_previa', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
+        window.location.href = vistaPrevia;
     } else {
         // Enviar al correo
         const modal = new bootstrap.Modal(document.getElementById('enviarCorreoModal'));
@@ -173,7 +174,9 @@ document.getElementById('enviarCorreoBtn').addEventListener('click', function() 
     const form = document.getElementById('enviarCorreoForm');
     const formData = new FormData(form);
     
-    fetch(`/factura/${comprobanteId}/enviar`, {
+    const enviarUrl = "{{ route('factura.enviar_correo', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
+    
+    fetch(enviarUrl, {
         method: 'POST',
         body: formData,
         headers: {
@@ -186,8 +189,9 @@ document.getElementById('enviarCorreoBtn').addEventListener('click', function() 
             const modal = bootstrap.Modal.getInstance(document.getElementById('enviarCorreoModal'));
             modal.hide();
             
-            // Mostrar vista previa - Corregir la URL
-            window.location.href = `/factura/${comprobanteId}/vista-previa`;
+            // Mostrar vista previa usando la ruta de Laravel
+            const vistaPrevia = "{{ route('factura.vista_previa', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
+            window.location.href = vistaPrevia;
         } else {
             alert('Error: ' + data.message);
         }
