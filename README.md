@@ -9,7 +9,7 @@ Sistema integral de gestión para locales de karaoke desarrollado con Laravel. I
 - [Instalación](#instalación)
 - [Configuración](#configuración)
 - [Uso](#uso)
-- [Estructura del Proyecto](#estructura del proyecto)
+- [Estructura del Proyecto](#estructura_del_proyecto)
 - [Roles de Usuario](#roles-de-usuario)
 - [API Routes](#api-routes)
 - [Base de Datos](#base-de-datos)
