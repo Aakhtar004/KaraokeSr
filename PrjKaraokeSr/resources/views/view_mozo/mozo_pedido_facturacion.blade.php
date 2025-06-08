@@ -160,8 +160,8 @@ document.getElementById('facturacionForm').addEventListener('submit', function(e
 
 function mostrarModalAcciones() {
     if (confirm('¿Qué quieres hacer?\nPresiona OK para Imprimir o Cancelar para Enviar al correo')) {
-        // Imprimir - por implementar
-        alert('Funcionalidad de impresión por implementar');
+        // Imprimir: redirigir a la vista previa del comprobante
+        window.location.href = `/factura/${comprobanteId}/vista-previa`;
     } else {
         // Enviar al correo
         const modal = new bootstrap.Modal(document.getElementById('enviarCorreoModal'));

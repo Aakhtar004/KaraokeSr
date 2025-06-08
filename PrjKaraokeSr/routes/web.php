@@ -27,15 +27,16 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         // PATCH: actualiza un producto, no muestra una vista
         Route::patch('/view_admin/admin_producto/{producto}', [controller_karaoke::class, 'actualizarProducto'])->name('admin.producto.actualizar');
         
-        //modificar precios en productos 2 apartados - producto categoria y producto productos
+        //Visualizar historial de pedidos -no funciona
         Route::get('/view_admin/admin_historial', [controller_karaoke::class, 'ver_admin_historial'])->name('vista.admin_historial');
-        //modificar precios en productos 2 apartados - producto categoria y producto producto       
+        //Visualizar historial de producto pedidos -no funciona
         Route::get('/view_admin/admin_compras', [controller_karaoke::class, 'ver_admin_compras'])->name('vista.admin_compras');
 
-        // NUEVAS RUTAS PARA GESTIÓN DE USUARIOS
+        // NUEVAS RUTAS PARA GESTIÓN DE USUARIOS - CORREGIDAS
         Route::get('/view_admin/admin_gestion_usuarios', [controller_karaoke::class, 'ver_admin_gestion_usuarios'])->name('vista.admin_gestion_usuarios');
-        Route::post('/admin/usuarios', [controller_karaoke::class, 'store_usuario'])->name('admin.usuarios.store');
-        Route::delete('/admin/usuarios/{usuario}', [controller_karaoke::class, 'delete_usuario'])->name('admin.usuarios.delete');
+        Route::post('/view_admin/admin_usuarios', [controller_karaoke::class, 'agregar_usuario'])->name('admin.usuarios.store');
+        Route::put('/view_admin/admin_usuarios/{usuario}', [controller_karaoke::class, 'modificar_usuario'])->name('admin.usuarios.update');
+        Route::delete('/view_admin/admin_usuarios/{usuario}', [controller_karaoke::class, 'eliminar_usuario'])->name('admin.usuarios.delete');
         
         // NUEVAS RUTAS PARA AGREGAR PRODUCTOS
         Route::get('/view_admin/admin_agregar_producto', [controller_karaoke::class, 'ver_admin_agregar_producto'])->name('vista.admin_agregar_producto');
@@ -67,7 +68,7 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         Route::post('/view_mozo/mozo_pedido/procesar', [controller_karaoke::class, 'procesar_mozo_pedido'])->name('vista.procesar_mozo_pedido');
         Route::post('/view_mozo/mozo_pedido/confirmar', [controller_karaoke::class, 'confirmar_mozo_pedido'])->name('vista.confirmar_mozo_pedido');
 
-        // Nuevas rutas funcionales
+        // Nuevas rutas GESTION DE PEDIDO
         Route::get('/pedidos/{pedido}', [controller_karaoke::class, 'ver_pedido'])->name('pedidos.ver');
         Route::get('/pedidos/{pedido}/editar', [controller_karaoke::class, 'editar_pedido'])->name('pedidos.editar');
         Route::put('/pedidos/{pedido}', [controller_karaoke::class, 'actualizar_pedido'])->name('pedidos.actualizar');

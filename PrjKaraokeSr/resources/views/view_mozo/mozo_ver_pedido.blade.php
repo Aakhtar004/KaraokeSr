@@ -50,11 +50,8 @@
                             <small class="text-muted">Cantidad: {{ $detalle->cantidad }}</small>
                             <small class="text-muted">Precio unit: S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</small>
                             <span class="badge bg-{{ $detalle->estado_item == 'SOLICITADO' ? 'warning' : ($detalle->estado_item == 'LISTO_PARA_ENTREGA' ? 'success' : 'info') }}">
-                                {{ $detalle->estado_item == 'LISTO_PARA_ENTREGA' ? 'LISTO' : $detalle->estado_item }}
+                                {{ $detalle->estado_item }}
                             </span>
-                            @if($pedido->comprobante)
-                                <span class="badge bg-info">PAGADO</span>
-                            @endif
                         </div>
                     </div>
                     <div class="text-end">

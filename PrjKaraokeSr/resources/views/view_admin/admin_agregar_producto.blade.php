@@ -5,6 +5,14 @@
 
 <div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
     <div class="card p-4" style="border-radius: 20px; background: rgba(255, 182, 182, 0.8); width: 100%; max-width: 400px;">
+        @if(session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
+        @endif
+
+        @if(session('error'))
+            <div class="alert alert-danger">{{ session('error') }}</div>
+        @endif
+
         <form action="{{ route('admin.productos.store') }}" method="POST">
             @csrf
             

@@ -891,70 +891,213 @@ class controller_karaoke extends Controller
     // NUEVAS FUNCIONALIDADES PARA GESTIÓN DE USUARIOS
     public function ver_admin_gestion_usuarios()
     {
-        $usuarios = usuarios::all();
+        $usuarios = usuarios::orderBy('rol')->orderBy('nombres')->get();
         return view('view_admin.admin_gestion_usuarios', compact('usuarios'));
     }
 
-    public function store_usuario(Request $request)
+    public function agregar_usuario(Request $request)
     {
-        $request->validate([
-            'nombres' => 'required|string|max:255',
-            'codigo_usuario' => 'required|string|max:50|unique:usuarios,codigo_usuario',
-            'contrasena' => 'required|string|min:6|confirmed',
-            'rol' => 'required|in:administrador,mesero,cocinero,bartender'
-        ]);
-
         try {
+            $messages = [
+                'nombres.required' => 'El nombre es obligatorio.',
+                'nombres.string' => 'El nombre debe ser texto válido.',
+                'nombres.max' => 'El nombre no puede tener más de 255 caracteres.',
+                'nombres.regex' => 'El nombre solo puede contener letras y espacios.',
+                'codigo_usuario.required' => 'El código de usuario es obligatorio.',
+                'codigo_usuario.string' => 'El código de usuario debe ser texto válido.',
+                'codigo_usuario.max' => 'El código de usuario no puede tener más de 50 caracteres.',
+                'codigo_usuario.unique' => 'Este código de usuario ya existe en el sistema.',
+                'codigo_usuario.regex' => 'El código de usuario solo puede contener letras, números y guiones.',
+                'contrasena.required' => 'La contraseña es obligatoria.',
+                'contrasena.string' => 'La contraseña debe ser texto válido.',
+                'contrasena.min' => 'La contraseña debe tener al menos 6 caracteres.',
+                'contrasena.confirmed' => 'La confirmación de contraseña no coincide.',
+                'contrasena.regex' => 'La contraseña no puede contener espacios.',
+                'rol.required' => 'Debe seleccionar un rol.',
+                'rol.in' => 'El rol seleccionado no es válido.'
+            ];
+
+            $validatedData = $request->validate([
+                'nombres' => ['required', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/'],
+                'codigo_usuario' => ['required', 'string', 'max:50', 'unique:usuarios,codigo_usuario', 'regex:/^[a-zA-Z0-9_-]+$/'],
+                'contrasena' => ['required', 'string', 'min:6', 'confirmed', 'regex:/^\S+$/'],
+                'rol' => ['required', 'in:administrador,mesero,cocinero,bartender']
+            ], $messages);
+
             // Generar usuario automáticamente basado en el nombre
-            $usuario = strtolower(str_replace(' ', '', $request->nombres)) . rand(100, 999);
+            $nombreLimpio = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $validatedData['nombres']));
+            $usuario = substr($nombreLimpio, 0, 8) . rand(100, 999);
 
             usuarios::create([
-                'codigo_usuario' => $request->codigo_usuario,
+                'codigo_usuario' => trim($validatedData['codigo_usuario']),
                 'usuario' => $usuario,
-                'contrasena' => Hash::make($request->contrasena),
-                'nombres' => $request->nombres,
-                'rol' => $request->rol,
+                'contrasena' => Hash::make($validatedData['contrasena']),
+                'nombres' => trim($validatedData['nombres']),
+                'rol' => $validatedData['rol'],
                 'estado' => 1,
                 'fecha_creacion' => now(),
                 'fecha_actualizacion' => now()
             ]);
 
             return redirect()->route('vista.admin_gestion_usuarios')
-                ->with('success', 'Usuario creado exitosamente');
+                ->with('success', 'Usuario "' . $validatedData['nombres'] . '" creado exitosamente.');
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('vista.admin_gestion_usuarios')
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('show_modal_add', true)
+                ->with('modal_type', 'add'); // AGREGAR IDENTIFICADOR
         } catch (\Exception $e) {
-            return back()->with('error', 'Error al crear usuario: ' . $e->getMessage());
+            return redirect()->route('vista.admin_gestion_usuarios')
+                ->with('error', 'Error inesperado: No se pudo crear el usuario.')
+                ->with('show_modal_add', true)
+                ->with('modal_type', 'add'); // AGREGAR IDENTIFICADOR
         }
     }
 
-    public function delete_usuario($id)
+    public function modificar_usuario(Request $request, $usuario)
     {
         try {
-            $usuario = usuarios::findOrFail($id);
+            // CAMBIAR LA BÚSQUEDA PARA USAR EL PARÁMETRO CORRECTO
+            $usuarioModel = usuarios::where('id_usuario', $usuario)->firstOrFail();
             
-            // Verificar si el usuario tiene pedidos asignados
-            $tienePedidos = pedidos::where('id_usuario_mesero', $id)->exists() || 
-                          pedido_detalles::where('id_usuario_preparador', $id)->exists();
-            
-            if ($tienePedidos) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede eliminar el usuario porque tiene pedidos asignados'
-                ]);
+            $messages = [
+                'nombres.required' => 'El nombre es obligatorio.',
+                'nombres.string' => 'El nombre debe ser texto válido.',
+                'nombres.max' => 'El nombre no puede tener más de 255 caracteres.',
+                'nombres.regex' => 'El nombre solo puede contener letras y espacios.',
+                'codigo_usuario.required' => 'El código de usuario es obligatorio.',
+                'codigo_usuario.string' => 'El código de usuario debe ser texto válido.',
+                'codigo_usuario.max' => 'El código de usuario no puede tener más de 50 caracteres.',
+                'codigo_usuario.unique' => 'Este código de usuario ya existe en el sistema.',
+                'codigo_usuario.regex' => 'El código de usuario solo puede contener letras, números y guiones.',
+                'contrasena.string' => 'La contraseña debe ser texto válido.',
+                'contrasena.min' => 'La contraseña debe tener al menos 6 caracteres.',
+                'contrasena.confirmed' => 'La confirmación de contraseña no coincide.',
+                'contrasena.regex' => 'La contraseña no puede contener espacios.',
+                'rol.required' => 'Debe seleccionar un rol.',
+                'rol.in' => 'El rol seleccionado no es válido.',
+                'estado.required' => 'Debe seleccionar un estado.',
+                'estado.in' => 'El estado seleccionado no es válido.'
+            ];
+
+            $rules = [
+                'nombres' => ['required', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/'],
+                'codigo_usuario' => ['required', 'string', 'max:50', 'unique:usuarios,codigo_usuario,' . $usuario . ',id_usuario', 'regex:/^[a-zA-Z0-9_-]+$/'],
+                'rol' => ['required', 'in:administrador,mesero,cocinero,bartender'],
+                'estado' => ['required', 'in:0,1']
+            ];
+
+            if ($request->filled('contrasena')) {
+                $rules['contrasena'] = ['required', 'string', 'min:6', 'confirmed', 'regex:/^\S+$/'];
             }
 
-            $usuario->delete();
+            $validatedData = $request->validate($rules, $messages);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Usuario eliminado exitosamente'
-            ]);
+            // Verificaciones especiales para roles críticos
+            if (($usuarioModel->rol === 'cocinero' || $usuarioModel->rol === 'bartender') && $validatedData['estado'] == 0) {
+                $otrosDelMismoRol = usuarios::where('rol', $usuarioModel->rol)
+                    ->where('estado', 1)
+                    ->where('id_usuario', '!=', $usuario)
+                    ->count();
 
+                if ($otrosDelMismoRol === 0) {
+                    return redirect()->route('vista.admin_gestion_usuarios')
+                        ->with('error', 'No se puede desactivar al único ' . $usuarioModel->rol . ' activo del sistema.')
+                        ->with('show_modal_edit', $usuario);
+                }
+            }
+
+            $datosActualizar = [
+                'nombres' => trim($validatedData['nombres']),
+                'codigo_usuario' => trim($validatedData['codigo_usuario']),
+                'rol' => $validatedData['rol'],
+                'estado' => $validatedData['estado'],
+                'fecha_actualizacion' => now()
+            ];
+
+            if ($request->filled('contrasena')) {
+                $datosActualizar['contrasena'] = Hash::make($validatedData['contrasena']);
+            }
+
+            $usuarioModel->update($datosActualizar);
+
+            return redirect()->route('vista.admin_gestion_usuarios')
+                ->with('success', 'Usuario "' . $validatedData['nombres'] . '" actualizado exitosamente.');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('vista.admin_gestion_usuarios')
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('show_modal_edit', $usuario)
+                ->with('modal_type', 'edit') // AGREGAR IDENTIFICADOR
+                ->with('edit_data', [ // ENVIAR DATOS DEL USUARIO
+                    'id' => $usuario,
+                    'nombres' => $request->input('nombres'),
+                    'codigo_usuario' => $request->input('codigo_usuario'),
+                    'rol' => $request->input('rol'),
+                    'estado' => $request->input('estado')
+                ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('vista.admin_gestion_usuarios')
+                ->with('error', 'Usuario no encontrado en el sistema.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar usuario: ' . $e->getMessage()
-            ]);
+            return redirect()->route('vista.admin_gestion_usuarios')
+                ->with('error', 'Error inesperado: No se pudo actualizar el usuario.')
+                ->with('show_modal_edit', $usuario)
+                ->with('modal_type', 'edit'); // AGREGAR IDENTIFICADOR
+        }
+    }
+
+    public function eliminar_usuario($usuario)
+    {
+        try {
+            // CAMBIAR LA BÚSQUEDA PARA USAR EL PARÁMETRO CORRECTO
+            $usuarioModel = usuarios::where('id_usuario', $usuario)->firstOrFail();
+            
+            // VALIDACIÓN 1: Los administradores no pueden eliminarse
+            if ($usuarioModel->rol === 'administrador') {
+                return back()->with('error', 'Los usuarios administradores no pueden ser eliminados por seguridad del sistema.');
+            }
+
+            // VALIDACIÓN 2: Verificar si es el único cocinero o bartender activo
+            if ($usuarioModel->rol === 'cocinero' || $usuarioModel->rol === 'bartender') {
+                $otrosDelMismoRol = usuarios::where('rol', $usuarioModel->rol)
+                    ->where('estado', 1)
+                    ->where('id_usuario', '!=', $usuario)
+                    ->count();
+
+                if ($otrosDelMismoRol === 0) {
+                    return back()->with('error', 'No se puede eliminar al único ' . $usuarioModel->rol . ' activo. Primero agregue otro ' . $usuarioModel->rol . ' al sistema.');
+                }
+            }
+
+            // VALIDACIÓN 3: Verificar si tiene pedidos asignados
+            $pedidosComoMesero = pedidos::where('id_usuario_mesero', $usuario)->count();
+            $pedidosComoPreparador = pedido_detalles::where('id_usuario_preparador', $usuario)->count();
+            
+            if ($pedidosComoMesero > 0 || $pedidosComoPreparador > 0) {
+                return back()->with('error', 'No se puede eliminar este usuario porque tiene ' . ($pedidosComoMesero + $pedidosComoPreparador) . ' pedido(s) asignado(s) en el sistema.');
+            }
+
+            // VALIDACIÓN 4: Verificar si ha emitido comprobantes
+            $comprobantesEmitidos = comprobantes::where('id_usuario_cajero', $usuario)->count();
+            
+            if ($comprobantesEmitidos > 0) {
+                return back()->with('error', 'No se puede eliminar este usuario porque ha emitido ' . $comprobantesEmitidos . ' comprobante(s). Por integridad de datos, solo se puede desactivar.');
+            }
+
+            $nombreUsuario = $usuarioModel->nombres;
+            $usuarioModel->delete();
+
+            return redirect()->route('vista.admin_gestion_usuarios')
+                ->with('success', 'Usuario "' . $nombreUsuario . '" eliminado exitosamente.');
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return back()->with('error', 'Usuario no encontrado en el sistema.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error inesperado: No se pudo eliminar el usuario.');
         }
     }
 
