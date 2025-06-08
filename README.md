@@ -4,19 +4,20 @@ Sistema integral de gestión para locales de karaoke desarrollado con Laravel. I
 
 ## 📋 Tabla de Contenidos
 
-- [Características](#características)
-- [Requisitos del Sistema](#requisitos-del-sistema)
-- [Instalación](#instalación)
-- [Configuración](#configuración)
-- [Uso](#uso)
-- [Estructura del Proyecto](#estructuradelproyecto)
-- [Roles de Usuario](#roles-de-usuario)
-- [API Routes](#api-routes)
-- [Base de Datos](#base-de-datos)
-- [Desarrollo](#desarrollo)
-- [Contribución](#contribución)
-- [Licencia](#licencia)
+- [✨ Características](#caracteristicas)
+- [🖥️ Requisitos del Sistema](#requisitos-del-sistema)
+- [🚀 Instalación](#instalacion)
+- [⚙️ Configuración](#configuracion)
+- [🎯 Uso](#uso)
+- [📁 Estructura del Proyecto](#estructura-del-proyecto)
+- [👥 Roles de Usuario](#roles-de-usuario)
+- [🛣️ Rutas API](#rutas-api)
+- [🗄️ Base de Datos](#base-de-datos)
+- [🔧 Desarrollo](#desarrollo)
+- [🤝 Contribución](#contribucion)
+- [📄 Licencia](#licencia)
 
+<a name="caracteristicas"></a>
 ## ✨ Características
 
 ### 🔐 Gestión de Usuarios
@@ -43,6 +44,7 @@ Sistema integral de gestión para locales de karaoke desarrollado con Laravel. I
 - **Barra**: Control de bebidas y cócteles
 - **Facturación**: Procesamiento de pagos y facturas
 
+<a name="requisitos-del-sistema"></a>
 ## 🖥️ Requisitos del Sistema
 
 - **PHP**: ^8.2
@@ -52,6 +54,7 @@ Sistema integral de gestión para locales de karaoke desarrollado con Laravel. I
 - **Node.js**: 16.0+ (para assets)
 - **NPM**: 8.0+
 
+<a name="instalacion"></a>
 ## 🚀 Instalación
 
 1. **Clonar el repositorio**
@@ -80,7 +83,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-6. **Configurar la base de datos** (ver sección [Configuración](#configuración))
+6. **Configurar la base de datos** (ver sección [Configuración](#configuracion))
 
 7. **Ejecutar las migraciones**
 ```bash
@@ -92,6 +95,7 @@ php artisan migrate
 php artisan db:seed
 ```
 
+<a name="configuracion"></a>
 ## ⚙️ Configuración
 
 ### Base de Datos MySQL
@@ -125,6 +129,7 @@ Configurado para usar base de datos como driver de cache:
 CACHE_STORE=database
 ```
 
+<a name="uso"></a>
 ## 🎯 Uso
 
 ### Desarrollo
@@ -151,6 +156,7 @@ npm run build
 php artisan serve --host=0.0.0.0 --port=8000
 ```
 
+<a name="estructura-del-proyecto"></a>
 ## 📁 Estructura del Proyecto
 
 ```
@@ -172,6 +178,7 @@ PrjKaraokeSr/
 └── storage/                    # Archivos de almacenamiento
 ```
 
+<a name="roles-de-usuario"></a>
 ## 👥 Roles de Usuario
 
 El sistema maneja los siguientes roles de usuario definidos en [`CheckTypeUser`](app/Http/Middleware/CheckTypeUser.php):
@@ -182,7 +189,8 @@ El sistema maneja los siguientes roles de usuario definidos en [`CheckTypeUser`]
 - **Barra**: Gestión de bebidas y cócteles
 - **Facturación**: Procesamiento de pagos y facturas
 
-## 🛣️ API Routes
+<a name="rutas-api"></a>
+## 🛣️ Rutas API
 
 ### Rutas de Administrador
 ```php
@@ -211,6 +219,7 @@ Para ver todas las rutas disponibles:
 php artisan route:list
 ```
 
+<a name="base-de-datos"></a>
 ## 🗄️ Base de Datos
 
 ### Configuración
@@ -235,6 +244,7 @@ php artisan migrate:rollback
 php artisan migrate:refresh
 ```
 
+<a name="desarrollo"></a>
 ## 🔧 Desarrollo
 
 ### Testing
@@ -273,6 +283,7 @@ php artisan queue:work
 php artisan queue:listen
 ```
 
+<a name="contribucion"></a>
 ## 🤝 Contribución
 
 1. Fork el proyecto
@@ -288,6 +299,7 @@ php artisan queue:listen
 - Comentar código complejo
 - Escribir tests para nuevas funcionalidades
 
+<a name="licencia"></a>
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
