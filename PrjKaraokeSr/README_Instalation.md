@@ -78,7 +78,15 @@ cd c:\xampp\htdocs\PrjKaraokeSr
 
 ### Paso 4: Configurar Laravel
 
-#### 4.1 Instalar Dependencias
+#### 4.1 Instalar Dependencias y modificacion de archivo
+
+```bash
+#Ingresar a la siguiente ruta
+cd C:\xampp\php\php.ini
+```
+Buscar ;extension=zip, quitar la (;), guardar el archivo y reiniciar xampp
+
+
 ```bash
 # Instalar dependencias de PHP
 composer install
