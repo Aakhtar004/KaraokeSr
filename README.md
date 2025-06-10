@@ -57,28 +57,50 @@ Sistema integral de gestión para locales de karaoke desarrollado con Laravel. I
 <a name="instalacion"></a>
 ## 🚀 Instalación
 
-1. **Clonar el repositorio**
+### Preparación del Entorno XAMPP
+
+1. **Descargar e instalar XAMPP**
+   - Descargar desde [https://www.apachefriends.org/](https://www.apachefriends.org/)
+   - Instalar en la ruta por defecto: `C:\xampp\`
+
+2. **Clonar el repositorio**
 ```bash
+git clone https://github.com/Aakhtar004/KaraokeSr.git
+```
+
+3. **Mover el proyecto a htdocs**
+```bash
+# Opción 1: Mover la carpeta completa
+move PrjKaraokeSr C:\xampp\htdocs\
+
+# Opción 2: Clonar directamente en htdocs
+cd C:\xampp\htdocs\
 git clone https://github.com/Aakhtar004/KaraokeSr.git
 cd PrjKaraokeSr
 ```
 
-2. **Instalar dependencias de PHP**
+4. **Iniciar servicios de XAMPP**
+   - Abrir XAMPP Control Panel
+   - Iniciar **Apache** y **MySQL**
+   - Verificar que estén en estado "Running"
+
+5. **Instalar dependencias de PHP**
 ```bash
+cd C:\xampp\htdocs\PrjKaraokeSr
 composer install
 ```
 
-3. **Instalar dependencias de Node.js**
+6. **Instalar dependencias de Node.js**
 ```bash
 npm install
 ```
 
-4. **Configurar el archivo de entorno**
+7. **Configurar el archivo de entorno**
 ```bash
 cp .env.example .env
 ```
 
-5. **Generar la clave de aplicación**
+8. **Generar la clave de aplicación**
 ```bash
 php artisan key:generate
 ```
