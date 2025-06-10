@@ -59,7 +59,7 @@ Sistema integral de gestión para locales de karaoke desarrollado con Laravel. I
 
 1. **Clonar el repositorio**
 ```bash
-git clone <url-del-repositorio>
+git clone https://github.com/Aakhtar004/KaraokeSr.git
 cd PrjKaraokeSr
 ```
 
