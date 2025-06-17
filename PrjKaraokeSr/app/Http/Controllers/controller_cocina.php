@@ -51,8 +51,20 @@ class controller_cocina extends Controller
 
     public function marcarPedidoListo($idDetalle)
     {
-        $detalle = pedido_detalles::findOrFail($idDetalle);
-        $detalle->update(['estado_item' => 'LISTO_PARA_ENTREGA']);
-        return back()->with('success', 'El pedido ha sido marcado como listo.');
+        $detalle = pedido_detalles::with(['pedido.mesa', 'producto'])->findOrFail($idDetalle);
+        // Solo marcar como listo si el producto es de cocina o ambos
+        if (in_array($detalle->producto->area_destino, ['cocina', 'ambos'])) {
+            $detalle->update(['estado_item' => 'LISTO_PARA_ENTREGA']);
+            // Si es AJAX, devolver JSON
+            if (request()->expectsJson()) {
+                $mesa = $detalle->pedido->mesa->numero_mesa ?? 'N/A';
+                return response()->json(['success' => true, 'mesa' => $mesa]);
+            }
+            return back()->with('success', 'El pedido ha sido marcado como listo.');
+        }
+        if (request()->expectsJson()) {
+            return response()->json(['success' => false, 'msg' => 'No es producto de cocina'], 400);
+        }
+        return back()->with('error', 'No es producto de cocina.');
     }
 }

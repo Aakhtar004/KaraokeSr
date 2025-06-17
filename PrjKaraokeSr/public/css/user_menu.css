@@ -1,0 +1,159 @@
+html, body {
+    width: 100vw;
+    min-height: 100vh;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden;
+    background: url('/images/dragon_background.png') center center/cover no-repeat fixed;
+}
+.body-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(180,180,180,0.4);
+    z-index: 1;
+    pointer-events: none;
+}
+body {
+    position: relative;
+}
+.top-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 153px;
+    background: url('/images/fondo_karaoke.jpg') center center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 120px;
+    z-index: 10;
+}
+.top-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(24, 19, 20, 0.82);
+    z-index: 1;
+}
+.logout-btn {
+    position: absolute;
+    left: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #e15b64;
+    border-radius: 50%;
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 2px 8px #0002;
+    cursor: pointer;
+    z-index: 20;
+    transition: background 0.2s;
+}
+.logout-btn:hover {
+    background: #b33939;
+}
+.logout-btn img {
+    width: 32px;
+    height: 32px;
+    display: block;
+}
+.user-menu-title {
+    color: #e5735c;
+    font-size: 1.5rem;
+    z-index: 2;
+    position: relative;
+    text-shadow: none;
+    margin-left: 0;
+    margin-right: 0;
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+.user-menu-container {
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: none;
+    padding-top: 220px;
+    box-sizing: border-box;
+}
+.background-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 180px;
+    transform: translate(-50%, -50%);
+    opacity: 0.12;
+    z-index: 1;
+    pointer-events: none;
+}
+.background-logo img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+.menu-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2.7rem;
+    z-index: 2;
+    position: relative;
+    align-items: center;
+}
+.menu-card + .menu-card {
+    margin-top: 0.7rem;
+}
+.menu-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 4px 16px #0002;
+    padding: 1.8rem 2.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #b33939;
+    font-weight: bold;
+    font-size: 1.2rem;
+    width: 215px;
+    min-height: 100px;
+    justify-content: center;
+    transition: box-shadow 0.2s, transform 0.2s, background 0.2s, color 0.2s;
+    text-decoration: none !important;
+}
+.menu-card:hover,
+.menu-card:focus,
+.menu-card:active {
+    background: #D05E4A !important;
+    color: #ffffff !important;
+}
+.menu-card:hover *,
+.menu-card:focus *,
+.menu-card:active * {
+    color: #ffffff !important;
+}
+.menu-card img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1rem;
+}
+.menu-card span {
+    color: #b33939;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none !important;
+}
+.navbar-nav {
+    position: absolute;
+    top: 200px;
+    right: 20px;
+    z-index: 20;
+} 

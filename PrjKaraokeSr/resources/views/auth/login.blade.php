@@ -7,6 +7,12 @@
             <h4 class="mb-0">Bienvenido al Salón ROJO</h4>
         </div>
         <div class="card-body">
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert" style="position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 250px;">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
             <form method="POST" action="{{ route('verificar.login') }}">
                 @csrf
                 <div class="form-group mb-3">

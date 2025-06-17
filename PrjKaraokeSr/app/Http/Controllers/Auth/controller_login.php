@@ -42,6 +42,6 @@ class controller_login extends Controller
         // Invalida la sesión y regenera el token CSRF
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('login');
+        return redirect('login')->with('success', 'Sesión cerrada con éxito');
     }
 }

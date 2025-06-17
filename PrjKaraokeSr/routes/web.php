@@ -49,13 +49,14 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         Route::get('/view_cocina/cocina_inventario', [controller_cocina::class, 'ver_cocina_inventario'])->name('vista.cocina_inventario');
         Route::post('/cocina/pedido/{detalle}/listo', [controller_cocina::class, 'marcarPedidoListo'])->name('cocina.pedido.listo');
         Route::post('/cocina/inventario/pedido', [controller_cocina::class, 'marcarProductosPedido'])->name('cocina.inventario.pedido');
+        Route::post('/cocina/marcar-pedido-listo/{id}', [controller_cocina::class, 'marcarPedidoListo'])->name('cocina.marcar_pedido_listo_ajax');
     });
 
     // Rutas para bartenders
     Route::middleware(['midctu:bartender'])->group(function () {
         Route::get('/view_barra/barra_historial', [controller_barra::class, 'ver_barra_historial'])->name('vista.barra_historial');
         Route::get('/view_barra/barra_inventario', [controller_barra::class, 'ver_barra_inventario'])->name('vista.barra_inventario');
-        Route::post('/barra/pedido/{detalle}/listo', [controller_barra::class, 'marcarPedidoListo'])->name('barra.pedido.listo');
+        Route::post('/barra/marcar-pedido-listo/{idPedido}', [controller_barra::class, 'marcarPedidoListo'])->name('barra.pedido.listo');
     });
 
     // Rutas para meseros

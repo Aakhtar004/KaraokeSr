@@ -41,10 +41,14 @@ class controller_barra extends Controller
         return view('view_barra.barra_historial', compact('pedidos'));
     }   
     
-    public function marcarPedidoListo($idDetalle)
+    public function marcarPedidoListo($idPedido)
     {
-        $detalle = pedido_detalles::findOrFail($idDetalle);
-        $detalle->update(['estado_item' => 'LISTO_PARA_ENTREGA']);
-        return back()->with('success', 'El pedido ha sido marcado como listo.');
+        pedido_detalles::where('id_pedido', $idPedido)
+            ->whereHas('producto', function ($query) {
+                $query->whereIn('area_destino', ['bar', 'ambos']);
+            })
+            ->update(['estado_item' => 'LISTO_PARA_ENTREGA']);
+            
+        return response()->json(['success' => true, 'message' => 'El pedido ha sido marcado como listo.']);
     }
 }

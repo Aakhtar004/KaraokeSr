@@ -1,0 +1,546 @@
+body {
+    background: rgba(180,180,180,0.4);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.barra-historial-container {
+    width: 100%;
+    min-height: calc(100vh - 220px); /* Altura mínima considerando el header */
+    padding: 20px 0;
+    background: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.barra-historial-content {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    flex: 1;
+}
+
+.barra-historial-container > h2 {
+    font-size: 1.5rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    color: #e5735c;
+    text-align: center;
+}
+
+.card-historial {
+    display: flex;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #fffbe9;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    margin: 2rem auto;
+    max-width: 390px;
+    width: 95%;
+    height: auto;
+}
+
+.card-historial-lateral {
+    background: #e5735c;
+    color: #fffbe9;
+    font-size: 3.5rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    min-width: 60px;
+    border-top-left-radius: 24px;
+    border-bottom-left-radius: 24px;
+}
+
+.card-historial-main {
+    flex: 1;
+    padding: 1.5rem 1.5rem 1.2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    justify-content: space-between;
+}
+
+.card-historial-header {
+    display: none;
+}
+
+.card-historial-mesa {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #e5735c;
+    line-height: 1;
+}
+
+.card-historial-right-section {
+    display: none;
+}
+
+.card-historial-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding: 0 0.5rem;
+}
+
+.card-historial-tiempo {
+    text-align: left;
+    font-size: 0.7rem;
+    color: #b85a47;
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    white-space: nowrap;
+}
+
+.card-historial-tiempo strong {
+    font-size: 1.4rem;
+    color: #222;
+    line-height: 1.2;
+    margin-bottom: 3px;
+}
+
+.card-historial-tiempo-line {
+    width: 50px;
+    height: 2px;
+    background-color: #d45a45;
+    margin-bottom: 0;
+}
+
+.card-historial-listo-btn {
+    background: #e5735c;
+    color: #fffbe9;
+    border: none;
+    border-radius: 999px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    padding: 0.35rem 1.4rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 120px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.card-historial-listo-btn:hover {
+    background: #d45a45;
+}
+
+.card-historial-table-container {
+    margin-top: 0;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 0.7rem 0.5rem 0.5rem 0.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.card-historial-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+}
+
+.card-historial-table th,
+.card-historial-table td {
+    padding: 0.4rem 0.7rem;
+    text-align: left;
+    font-weight: normal;
+}
+
+.card-historial-table th {
+    color: #e5735c;
+    font-weight: bold;
+    border-bottom: 2px solid #5C8C70;
+    background: #fffbe9;
+}
+
+.card-historial-table th:not(:last-child) {
+    border-right: 2px solid #5C8C70;
+}
+
+.card-historial-table th:first-child {
+    border-left: none;
+}
+
+.card-historial-table td {
+    border-bottom: 1px solid rgba(255, 192, 203, 0.5);
+    background: #ffffff;
+    color: #333;
+}
+
+.card-historial-table td:first-child {
+    border-left: none;
+    border-right: 2px solid #5C8C70;
+    color: #333;
+    font-weight: bold;
+    text-align: center;
+    width: 30px;
+    padding: 0.4rem 0.3rem;
+}
+
+.card-historial-table td:nth-child(2) {
+    width: 60px;
+    text-align: center;
+    border-right: 2px solid #5C8C70;
+}
+
+.card-historial-table td:nth-child(3) {
+    width: auto;
+    border-right: none;
+}
+
+.card-historial-table th:nth-child(2) {
+    color: #e5735c;
+    width: 60px;
+    text-align: center;
+}
+
+.card-historial-table th:nth-child(3) {
+    color: #e5735c;
+    width: auto;
+}
+
+@media (max-width: 480px) {
+    .card-historial {
+        max-width: 390px;
+        min-width: unset;
+        margin: 1rem auto;
+    }
+    .card-historial-main {
+        padding: 1rem 0.5rem 0.7rem 1rem;
+    }
+    .card-historial-lateral {
+        font-size: 3.8rem;
+        min-width: 65px;
+    }
+    .card-historial-listo-btn {
+        font-size: 1.05rem;
+        padding: 0.35rem 1.4rem;
+        width: 135px;
+        height: 48px;
+    }
+    .card-historial-table-container {
+        padding: 0.7rem 0.5rem 0.5rem 0.5rem;
+    }
+    .barra-historial-container > h2 {
+        font-size: 1.4rem;
+    }
+}
+
+/* Estilos para el botón Listo */
+.btn-listo {
+    background: #e5735c;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-listo:hover {
+    background: #d05e4a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Estilos para los modales */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    overflow: auto;
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.close {
+    color: #666;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-cancelar {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancelar:hover {
+    background: #eee;
+}
+
+.btn-confirmar {
+    background: #e5735c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-confirmar:hover {
+    background: #d05e4a;
+}
+
+/* Estilos para el modal de éxito */
+.success-modal {
+    text-align: center;
+    padding: 30px;
+}
+
+.success-icon {
+    font-size: 48px;
+    color: #4CAF50;
+    margin-bottom: 20px;
+}
+
+#successMessage {
+    color: #333;
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+/* Estilos para los detalles del pedido en el modal */
+.pedido-detalles {
+    margin-top: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.detalle-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.detalle-item:last-child {
+    border-bottom: none;
+}
+
+.detalle-item .producto {
+    color: #333;
+    font-weight: 500;
+}
+
+.detalle-item .cantidad {
+    color: #666;
+    font-weight: 600;
+}
+
+/* Estilos para los badges de estado */
+.estado-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.estado-pendiente {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.estado-completado {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Encabezado tipo hero para barra_historial */
+.barra-header {
+    position: relative;
+    width: 100vw;
+    min-height: 180px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: url('/images/fondo_barra.png') center center/cover no-repeat;
+    margin-bottom: 30px;
+    border-radius: 0 0 24px 24px;
+    overflow: hidden;
+}
+.barra-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(24, 19, 20, 0.82);
+    z-index: 1;
+}
+.barra-header-back {
+    position: relative;
+    z-index: 2;
+    margin-left: 40px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 6px solid #e5735c;
+    transition: background 0.2s, border 0.2s;
+}
+.barra-header-back:hover {
+    background: #e5735c;
+    border-color: #d05e4a;
+}
+.barra-header-back-icon {
+    font-size: 3.2rem;
+    color: #e5735c;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+.barra-header-back:hover .barra-header-back-icon {
+    color: #fff;
+}
+.barra-header-content {
+    position: relative;
+    z-index: 2;
+    margin-left: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.barra-header-title {
+    font-size: 3.2rem;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #e5735c;
+    font-weight: bold;
+    margin-bottom: 0.2em;
+    letter-spacing: 1px;
+}
+.barra-header-subtitle {
+    font-size: 3.1rem;
+    font-family: 'Instrument Sans', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #fffbe9;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+@media (max-width: 700px) {
+    .barra-header {
+        min-height: 120px;
+        height: 150px;
+    }
+    .barra-header-back {
+        width: 50px;
+        height: 50px;
+        margin-left: 10px;
+    }
+    .barra-header-back-icon {
+        font-size: 2rem;
+    }
+    .barra-header-content {
+        margin-left: 15px;
+    }
+    .barra-header-title {
+        font-size: 2rem;
+    }
+    .barra-header-subtitle {
+        font-size: 1.7rem;
+    }
+}
+
+@media (min-width: 900px) {
+    .barra-historial-content {
+        max-width: 1000px;
+        gap: 36px;
+    }
+    .barra-historial-container {
+        padding: 40px 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .barra-historial-content {
+        max-width: 98vw;
+        gap: 12px;
+    }
+    .barra-historial-container {
+        padding: 8px 0;
+        min-height: calc(100vh - 150px);
+    }
+}

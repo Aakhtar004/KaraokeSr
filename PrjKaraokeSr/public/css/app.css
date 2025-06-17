@@ -1,0 +1,11 @@
+html, body {
+    height: 100%; /* Ensures html and body take full height */
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+    min-height: 100vh; /* Ensures body is at least viewport height */
+    overflow-y: auto; /* Adds vertical scrollbar if content overflows */
+} 
