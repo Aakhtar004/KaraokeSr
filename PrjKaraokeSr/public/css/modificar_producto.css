@@ -1,0 +1,128 @@
+/* public/css/productos_categoria.css */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+
+/* Estilos para el header */
+.custom-header {
+    background: #2d1a12;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 2px solid #ff6b6b;
+}
+
+.back-button {
+    position: absolute;
+    left: 20px;
+    color: #e5735c;
+    font-size: 1.5em;
+}
+
+.back-button img {
+    width: 40px;
+    height: 40px;
+}
+
+.page-title {
+    color: #ff6b6b;
+    font-size: 1.2em;
+    margin: 15;
+    margin-left: 60px;
+}
+
+.page-subtitle {
+    color: white;
+    font-size: 0.9em;
+    margin: 5px 0 0;
+}
+
+
+/* Header */
+.page-title {
+    color: #ff6b6b;
+    font-size: 1.2em;
+    margin-bottom: 5px;
+}
+
+.page-subtitle {
+    color: white;
+    font-size: 0.9em;
+    margin: 5px 0 0;
+    margin-left: 60px;
+}
+
+/* Barra de búsqueda */
+.search-bar {
+    background: white;
+    border-radius: 25px;
+    padding: 10px 15px;
+    margin-bottom: 25px;
+    margin-top: 25px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.search-input {
+    border: none;
+    width: 100%;
+    outline: none;
+}
+
+/* Lista de productos */
+.list-group-item {
+    background: white;
+    border-radius: 15px !important;
+    margin-bottom: 15px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Estilo de imagen */
+.list-group-item img {
+    width: 80px !important;
+    height: 80px !important;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+/* Inputs de cantidad */
+.form-control {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 8px 12px;
+    width: 80px;
+    text-align: center;
+}
+
+/* Botón Guardar */
+.btn-primary {
+    background: #d32f2f !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 8px 20px !important;
+    font-weight: 500;
+}
+
+/* Switch de estado */
+.form-check-input {
+    width: 50px;
+    height: 25px;
+    margin-right: 10px;
+}
+
+/* Estado activo */
+.form-check-label {
+    color: #4caf50;
+    font-weight: 500;
+}
+
+/* Texto de producto */
+h5 {
+    color: #333;
+    font-size: 1.1em;
+    margin-bottom: 5px !important;
+}
+
+small {
+    color: #757575 !important;
+    font-size: 0.85em;
+}

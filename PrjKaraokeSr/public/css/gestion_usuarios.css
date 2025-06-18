@@ -1,0 +1,59 @@
+.custom-header {
+    background: #2d1a12;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 2px solid #ff6b6b;
+    height: 80px;
+}
+
+.back-button {
+    position: absolute;
+    left: 20px;
+}
+
+.back-button img {
+    width: 40px;
+    height: 40px;
+}
+
+.header-title {
+    flex: 1;
+    text-align: center;
+}
+
+.header-title h1 {
+    color: white;
+    font-size: 1.2em;
+    margin: 0;
+}
+
+.add-user-btn {
+    background: #2d1a12;
+    border: none;
+    border-radius: 20px;
+    margin-top: 25px;
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ff6b6b;
+    font-weight: 500;
+    cursor: pointer;
+    margin-left: 20px;
+}
+
+.add-user-btn:hover {
+    background: #fff;
+}
+
+.add-user-btn img {
+    width: 30px;
+    height: 30px;
+}
+
+/* Botón de agregar original (ocultar) */
+.d-flex.justify-content-start.mb-4 {
+    display: none !important;
+}

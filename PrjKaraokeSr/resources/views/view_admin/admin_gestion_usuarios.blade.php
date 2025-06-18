@@ -1,7 +1,21 @@
 @extends('view_layout.app')
-
 @section('content')
-<x-app-header backUrl="{{ route('vista.user_menu') }}" title="Gestión de Usuarios" />
+<link href="{{ asset('css/gestion_usuarios.css') }}" rel="stylesheet">
+
+<!-- Header personalizado -->
+<div class="custom-header">
+    <a href="{{ route('vista.user_menu') }}" class="back-button">
+        <img src="{{ asset('images/izquierda.png') }}" alt="Regresar">
+    </a>
+    <div class="header-title">
+        <h1>Vista Gestión de Usuarios</h1>
+    </div>
+</div>
+
+<button class="add-user-btn">
+        <img src="{{ asset('images/add.png') }}" alt="Agregar">
+        Agregar Usuario
+    </button>
 
 <div class="container mt-4">
     <?php if(session('success')): ?>
@@ -18,8 +32,8 @@
         </div>
     <?php endif; ?>
 
-    <!-- Botón agregar usuario -->
-    <div class="d-flex justify-content-start mb-4">
+    <!-- Botón agregar usuario (oculto) -->
+    <div class="d-flex justify-content-start mb-4" style="display: none !important;">
         <button class="btn btn-danger rounded-circle d-flex align-items-center justify-content-center" 
                 style="width: 50px; height: 50px; font-size: 1.5rem;"
                 data-bs-toggle="modal" data-bs-target="#modalAgregarUsuario">
@@ -316,6 +330,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Configurar modal de agregar al hacer clic en el botón personalizado
+    const addUserBtn = document.querySelector('.add-user-btn');
+    addUserBtn.addEventListener('click', function() {
+        const modalAgregar = new bootstrap.Modal(document.getElementById('modalAgregarUsuario'));
+        modalAgregar.show();
+    });
 });
 </script>
 @endsection
