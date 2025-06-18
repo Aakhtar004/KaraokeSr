@@ -163,57 +163,8 @@ php artisan key:generate
 
 **IMPORTANTE:** El archivo `.env.example` ya está configurado correctamente para usar la base de datos `karaokedb` con MySQL local.
 
-### Paso 5: Configurar Base de Datos
 
-#### 5.1 Verificar Importación de Base de Datos
-```bash
-# Verificar que las tablas se crearon correctamente
-php artisan tinker
-```
-
-En el shell de Tinker, ejecuta:
-```php
-# Verificar conexión a la base de datos
-DB::connection()->getPdo();
-
-# Contar tablas importadas
-collect(DB::select('SHOW TABLES'))->count();
-
-# Verificar usuarios del sistema
-DB::table('gusers')->count();
-
-# Salir de Tinker
-exit
-```
-
-**NO ejecutar migraciones** ya que la base de datos viene completa con el archivo SQL.
-
-### Paso 6: Compilar Assets
-
-```bash
-# Compilar assets para desarrollo
-npm run dev
-
-# O compilar para producción
-npm run build
-
-# Para desarrollo con hot reload
-npm run watch
-```
-
-### Paso 7: Configurar Permisos (Solo Linux/Mac)
-
-```bash
-# Dar permisos a carpetas de almacenamiento
-chmod -R 775 storage
-chmod -R 775 bootstrap/cache
-
-# Cambiar propietario
-sudo chown -R www-data:www-data storage
-sudo chown -R www-data:www-data bootstrap/cache
-```
-
-### Paso 8: Iniciar el Servidor
+### Paso 5: Iniciar el Servidor
 
 Con XAMPP ya tienes Apache corriendo, por lo que el sistema estará disponible directamente:
 
