@@ -1,15 +1,29 @@
 @extends('view_layout.app')
 
+@push('styles')
+<link href="{{ asset('css/barra_inventario.css') }}" rel="stylesheet">
+@endpush
+
 @section('content')
-<x-app-header backUrl="{{ route('vista.user_menu') }}" />
-<div class="container mt-4">
-    <h2>Control de Inventario de la Barra</h2>
-    <label>Buscar producto:</label>
-    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Buscar por nombre o categoría" onkeyup="filterProducts()">
+<div class="barra-header">
+    <a href="{{ route('vista.user_menu') }}" class="barra-header-back">
+        <span class="barra-header-back-icon">&#8592;</span>
+    </a>
+    <div class="barra-header-content">
+        <div class="barra-header-title">Control de Inventario</div>
+        <div class="barra-header-subtitle">Bar</div>
+    </div>
+</div>
+<div class="container">
+    <div class="search-container mb-4">
+        <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nombre o categoría..." onkeyup="filterProducts()">
 
     <form id="pedidoForm" action="{{ route('cocina.inventario.pedido') }}" method="POST">
         @csrf
-        <button type="submit" id="btnEnviar" class="btn btn-danger mb-3" disabled>Enviar</button>
+        <div class="footer-buttons">
+            <button type="button" id="btnLimpiar" class="btn-limpiar" onclick="limpiarSeleccion()">Limpiar</button>
+            <button type="submit" id="btnEnviar" class="btn-enviar" disabled>Enviar</button>
+        </div>
         <div class="accordion mt-4" id="accordionCategorias">
             @foreach($categorias_producto as $categoria)
             <div class="accordion-item">
@@ -59,6 +73,14 @@
 </div>
 
 <script>
+function limpiarSeleccion() {
+    const checkboxes = document.querySelectorAll('.producto-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+    });
+    document.getElementById('btnEnviar').disabled = true;
+}
+
 function filterProducts() {
     const input = document.getElementById('searchInput');
     const filter = input.value.toLowerCase();

@@ -1,15 +1,27 @@
 @extends('view_layout.app')
 
+@push('styles')
+<link href="{{ asset('css/cocina_inventario.css') }}" rel="stylesheet">
+@endpush
+
 @section('content')
-<x-app-header backUrl="{{ route('vista.user_menu') }}" />
-<div class="container mt-4">
-    <h2>Control de Inventario de Cocina</h2>
-    <label>Buscar producto:</label>
-    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Buscar por nombre o categoría" onkeyup="filterProducts()">
+<div class="cocina-header">
+    <a href="{{ route('vista.user_menu') }}" class="cocina-header-back">
+        <span class="cocina-header-back-icon">&#8592;</span>
+    </a>
+    <div class="cocina-header-content">
+        <div class="cocina-header-title">Control de Inventario</div>
+        <div class="cocina-header-subtitle">Cocina</div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Buscar producto..." onkeyup="filterProducts()">
+    </div>
 
     <form id="pedidoForm" action="{{ route('cocina.inventario.pedido') }}" method="POST">
         @csrf
-        <button type="submit" id="btnEnviar" class="btn btn-danger mb-3" disabled>Enviar</button>
         <div class="accordion mt-4" id="accordionCategorias">
             @foreach($categorias_producto as $categoria)
             <div class="accordion-item">
@@ -53,12 +65,22 @@
                     </div>
                 </div>
             </div>
-            @endforeach
+            @endforeach</div>
+        </div>
+        <div class="footer-buttons">
+            <button type="button" class="btn-limpiar" onclick="limpiarSeleccion()">Limpiar</button>
+            <button type="submit" id="btnEnviar" class="btn-enviar" disabled>Enviar</button>
         </div>
     </form>
 </div>
 
 <script>
+function limpiarSeleccion() {
+    const checkboxes = document.querySelectorAll('.producto-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('btnEnviar').disabled = true;
+}
+
 function filterProducts() {
     const input = document.getElementById('searchInput');
     const filter = input.value.toLowerCase();
