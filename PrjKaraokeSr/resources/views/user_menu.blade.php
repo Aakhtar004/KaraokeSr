@@ -48,13 +48,26 @@
         </div>
 
         @if($user->rol === 'administrador')
-            <a class="btn btn-secondary btn-lg" href="{{ route('vista.admin_modificar_categoria') }}">Modificar Precios y Stock</a>
-            <a class="btn btn-secondary btn-lg" href="{{ route('vista.admin_agregar_producto') }}">Agregar Producto</a>
-            <a class="btn btn-secondary btn-lg" href="{{ route('vista.admin_gestion_usuarios') }}">Gestionar Usuarios</a>
-            <a class="btn btn-secondary btn-lg disabled" href="{{ route('vista.admin_historial') }}">Ver Historial de Compras</a>
-            <a class="btn btn-secondary btn-lg disabled" href="{{ route('vista.admin_compras') }}">Generar lista de Compras</a>
-            <a class="btn btn-secondary btn-lg disabled" href="#">Agregar Promociones</a>
-
+        <div class="button-grid">
+            <a href="{{ route('vista.admin_modificar_categoria') }}" class="menu-button">
+                <img src="{{ asset('images/factura.png') }}" alt="Precios"> Modificar Precios y Stock
+            </a>
+            <a href="{{ route('vista.admin_agregar_producto') }}" class="menu-button">
+                <img src="{{ asset('images/addproducto.png') }}" alt="Producto"> Agregar Producto
+            </a>
+            <a href="#" class="menu-button disabled">
+                <img src="{{ asset('images/promocion.png') }}" alt="Promociones"> Agregar Promociones
+            </a>
+            <a href="{{ route('vista.admin_gestion_usuarios') }}" class="menu-button">
+                <img src="{{ asset('images/usuarios.png') }}" alt="Usuarios"> Gestionar Usuarios
+            </a>
+            <a href="{{ route('vista.admin_historial') }}" class="menu-button">
+                <img src="{{ asset('images/historial.png') }}" alt="Historial"> Ver Historial de Pedidos
+            </a>
+            <a href="{{ route('vista.admin_compras') }}" class="menu-button">
+                <img src="{{ asset('images/pedido.png') }}" alt="Compras"> Generar Lista de Compras
+            </a>
+        </div>
 
         @elseif($user->rol === 'mesero')
             <a class="btn btn-secondary btn-lg" href="{{ route('vista.mozo_historial') }}">Ver Historial de Pedidos</a>

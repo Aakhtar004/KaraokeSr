@@ -9,7 +9,7 @@ html, body {
 .body-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(180,180,180,0.4);
+
     z-index: 1;
     pointer-events: none;
 }
@@ -157,3 +157,43 @@ body {
     right: 20px;
     z-index: 20;
 } 
+
+    .button-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        max-width: 800px;
+        margin: 20px auto;
+    }
+    
+    .menu-button {
+        padding: 15px;
+        background-color: #f0f0f0;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #a94442;
+        display: flex;
+        flex-direction: column; /* Cambio clave: dirección de columna */
+        align-items: center;    /* Centra horizontalmente */
+        justify-content: center; 
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .menu-button:hover {
+        background-color: #ec4842;
+        transform: translateY(-2px);
+        color: #fff;
+    }
+    
+    .menu-button img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+    }
+    
+    .bottom-button {
+        grid-column: 1 / -1;
+        margin-top: 15px;
+        text-align: center;
+    }
