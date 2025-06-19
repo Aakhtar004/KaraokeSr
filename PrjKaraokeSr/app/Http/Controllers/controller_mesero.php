@@ -72,13 +72,19 @@ class controller_mesero extends Controller
     {
         $mesa = mesas::findOrFail($idMesa);
         
-        // Traer todos los productos (cocina y barra)
-        $productos = productos::all();
+        // Categorías específicas para meseros
+        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
         
-        // Traer todas las categorías que tengan productos
-        $categorias_producto = categorias_producto::whereIn('id_categoria_producto', 
-            $productos->pluck('id_categoria_producto')->unique()
-        )->get();
+        // Obtener solo las categorías específicas para meseros
+        $categorias_producto = categorias_producto::whereIn('nombre', $categoriasMesero)
+            ->where('estado', 1)
+            ->get();
+        
+        // Obtener productos que pertenecen a estas categorías específicas
+        $productos = productos::whereIn('id_categoria_producto', 
+            $categorias_producto->pluck('id_categoria_producto'))
+            ->where('estado', 1)
+            ->get();
 
         return view('view_mozo.mozo_pedido', compact('mesa', 'categorias_producto', 'productos'));
     }
@@ -96,7 +102,6 @@ class controller_mesero extends Controller
         $idMesa = $request->input('id_mesa');
         $productos = $request->input('productos', []);
         $editandoPedido = session('editando_pedido');
-        $productosYaPedidos = session('productos_ya_pedidos', []);
         
         $pedidosTemp = [];
         $totalPedido = 0;
@@ -118,26 +123,21 @@ class controller_mesero extends Controller
                 if ($producto) {
                     $cantidad = (int)($datos['cantidad'] ?? 1);
                     
-                    // Si estamos agregando a un pedido existente, solo procesar productos nuevos o con cantidad adicional
                     if ($editandoPedido) {
-                        $cantidadYaPedida = $productosYaPedidos[$idProducto] ?? 0;
-                        // Solo agregar la diferencia si es mayor que lo ya pedido
-                        if ($cantidad <= $cantidadYaPedida) {
-                            continue; // Saltar este producto, no hay cantidad adicional
-                        }
-                        $cantidadAdicional = $cantidad - $cantidadYaPedida;
-                        $subtotal = $producto->precio_unitario * $cantidadAdicional;
+                        // Al agregar a un pedido existente, solo procesamos los productos nuevos
+                        // Sin considerar cantidades previas ya que empezamos desde 0
+                        $subtotal = $producto->precio_unitario * $cantidad;
                         $totalPedido += $subtotal;
                         
-                        // Validar stock disponible solo para la cantidad adicional
-                        if ($producto->stock < $cantidadAdicional) {
+                        // Validar stock disponible
+                        if ($producto->stock < $cantidad) {
                             return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
                         }
                         
                         $pedidosTemp[] = [
                             'id_producto' => $idProducto,
                             'nombre' => $producto->nombre,
-                            'cantidad' => $cantidadAdicional,
+                            'cantidad' => $cantidad,
                             'precio' => $producto->precio_unitario,
                             'subtotal' => $subtotal,
                             'area_destino' => $producto->area_destino
@@ -210,33 +210,19 @@ class controller_mesero extends Controller
 
                     $idPreparador = $this->asignarPreparador($producto->area_destino);
 
-                    // Verificar si ya existe un detalle para este producto en el pedido
-                    $detalleExistente = pedido_detalles::where('id_pedido', $pedido->id_pedido)
-                        ->where('id_producto', $item['id_producto'])
-                        ->first();
-
-                    if ($detalleExistente) {
-                        // Actualizar el detalle existente
-                        $nuevaCantidad = $detalleExistente->cantidad + $item['cantidad'];
-                        $nuevoSubtotal = $detalleExistente->subtotal + $item['subtotal'];
-                        
-                        $detalleExistente->update([
-                            'cantidad' => $nuevaCantidad,
-                            'subtotal' => $nuevoSubtotal
-                        ]);
-                    } else {
-                        // Crear nuevo detalle
-                        pedido_detalles::create([
-                            'id_pedido' => $pedido->id_pedido,
-                            'id_producto' => $item['id_producto'],
-                            'cantidad' => $item['cantidad'],
-                            'precio_unitario_momento' => $item['precio'],
-                            'subtotal' => $item['subtotal'],
-                            'estado_item' => 'SOLICITADO',
-                            'id_usuario_preparador' => $idPreparador,
-                            'fecha_creacion' => now()
-                        ]);
-                    }
+                    // CAMBIO PRINCIPAL: Siempre crear NUEVOS detalles para productos agregados en edición
+                    // No verificar si ya existe el producto, crear siempre un nuevo registro
+                    // Esto asegura que aparezcan como pedidos nuevos en cocina/barra
+                    pedido_detalles::create([
+                        'id_pedido' => $pedido->id_pedido,
+                        'id_producto' => $item['id_producto'],
+                        'cantidad' => $item['cantidad'],
+                        'precio_unitario_momento' => $item['precio'],
+                        'subtotal' => $item['subtotal'],
+                        'estado_item' => 'SOLICITADO', // Estado inicial para que aparezca en historial
+                        'id_usuario_preparador' => $idPreparador,
+                        'fecha_creacion' => now()
+                    ]);
 
                     $producto->decrement('stock', $item['cantidad']);
                 }
@@ -341,9 +327,13 @@ class controller_mesero extends Controller
                   ->where('id_pedido', '!=', $idPedido); // Excluir el pedido actual
         })->get();
         
-        // Agrupar productos por categoría
+        // Separar productos editables de no editables
+        $detallesEditables = $pedido->detalles->where('estado_item', '!=', 'LISTO_PARA_ENTREGA');
+        $detallesNoEditables = $pedido->detalles->where('estado_item', 'LISTO_PARA_ENTREGA');
+        
+        // Agrupar productos editables por categoría
         $productosPorCategoria = [];
-        foreach ($pedido->detalles as $detalle) {
+        foreach ($detallesEditables as $detalle) {
             $categoria = $detalle->producto->categoria;
             if (!isset($productosPorCategoria[$categoria->id_categoria_producto])) {
                 $productosPorCategoria[$categoria->id_categoria_producto] = [
@@ -353,8 +343,26 @@ class controller_mesero extends Controller
             }
             $productosPorCategoria[$categoria->id_categoria_producto]['productos'][] = $detalle;
         }
+
+        // Agrupar productos no editables por categoría
+        $productosNoEditablesPorCategoria = [];
+        foreach ($detallesNoEditables as $detalle) {
+            $categoria = $detalle->producto->categoria;
+            if (!isset($productosNoEditablesPorCategoria[$categoria->id_categoria_producto])) {
+                $productosNoEditablesPorCategoria[$categoria->id_categoria_producto] = [
+                    'categoria' => $categoria,
+                    'productos' => []
+                ];
+            }
+            $productosNoEditablesPorCategoria[$categoria->id_categoria_producto]['productos'][] = $detalle;
+        }
         
-        return view('view_mozo.mozo_editar_pedido', compact('pedido', 'mesas', 'productosPorCategoria'));
+        return view('view_mozo.mozo_editar_pedido', compact(
+            'pedido', 
+            'mesas', 
+            'productosPorCategoria', 
+            'productosNoEditablesPorCategoria'
+        ));
     }
 
     public function actualizar_pedido(Request $request, $idPedido)
@@ -364,6 +372,11 @@ class controller_mesero extends Controller
         $productosModificados = $request->input('productos', []);
 
         try {
+            // VALIDACIÓN ADICIONAL: Verificar si el pedido tiene comprobante
+            if ($pedido->comprobante !== null) {
+                return back()->with('error', 'No se puede editar un pedido que ya ha sido facturado.');
+            }
+
             // 1. Actualizar mesa si cambió
             if ($nuevaMesa != $pedido->id_mesa) {
                 $pedido->update(['id_mesa' => $nuevaMesa]);
@@ -373,6 +386,11 @@ class controller_mesero extends Controller
             foreach ($productosModificados as $idDetalle => $datos) {
                 $detalle = pedido_detalles::find($idDetalle);
                 if (!$detalle) continue;
+
+                // VALIDACIÓN: No permitir editar productos que ya están listos para entrega
+                if ($detalle->estado_item === 'LISTO_PARA_ENTREGA') {
+                    return back()->with('error', "No se puede modificar el producto '{$detalle->producto->nombre}' porque ya está listo para entrega.");
+                }
 
                 $accion = $datos['accion'] ?? '';
                 $producto = $detalle->producto;
@@ -416,28 +434,31 @@ class controller_mesero extends Controller
     {
         $pedido = pedidos::with('mesa')->findOrFail($idPedido);
         
-        // Obtener productos ya pedidos para pre-seleccionar
-        $productosYaPedidos = $pedido->detalles()->with('producto')->get()
-            ->groupBy('id_producto')
-            ->map(function($detalles) {
-                return $detalles->sum('cantidad');
-            });
-
-        // Traer todos los productos
-        $productos = productos::all();
-        $categorias_producto = categorias_producto::whereIn('id_categoria_producto', 
-            $productos->pluck('id_categoria_producto')->unique()
-        )->get();
+        // Categorías específicas para meseros
+        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
+        
+        // Obtener solo las categorías específicas para meseros
+        $categorias_producto = categorias_producto::whereIn('nombre', $categoriasMesero)
+            ->where('estado', 1)
+            ->get();
+        
+        // Obtener productos que pertenecen a estas categorías específicas
+        $productos = productos::whereIn('id_categoria_producto', 
+            $categorias_producto->pluck('id_categoria_producto'))
+            ->where('estado', 1)
+            ->get();
 
         // Guardar datos del pedido en sesión para mantener el contexto
         session([
             'editando_pedido' => $idPedido,
-            'productos_ya_pedidos' => $productosYaPedidos->toArray()
+            // Eliminar productos_ya_pedidos para que no se pre-seleccionen
+            'productos_ya_pedidos' => []
         ]);
 
-        return view('view_mozo.mozo_pedido', compact('pedido', 'categorias_producto', 'productos', 'productosYaPedidos'))
+        return view('view_mozo.mozo_pedido', compact('pedido', 'categorias_producto', 'productos'))
             ->with('mesa', $pedido->mesa)
-            ->with('editando', true);
+            ->with('editando', true)
+            ->with('productosYaPedidos', []); // Array vacío para que no se marquen productos
     }
 
 
@@ -446,6 +467,29 @@ class controller_mesero extends Controller
         $pedido = pedidos::with('detalles')->findOrFail($idPedido);
         
         try {
+            // ✨ VALIDACIÓN: No permitir eliminar pedidos con productos listos para entrega
+            $productosListos = $pedido->detalles->where('estado_item', 'LISTO_PARA_ENTREGA');
+            
+            if ($productosListos->count() > 0) {
+                $nombresProductos = $productosListos->pluck('producto.nombre')->take(3)->join(', ');
+                $cantidadListos = $productosListos->count();
+                
+                if ($cantidadListos > 3) {
+                    $nombresProductos .= ' y ' . ($cantidadListos - 3) . ' más';
+                }
+                
+                return back()->with('error', 
+                    "No se puede eliminar el pedido porque ya tiene productos listos para entrega: {$nombresProductos}. " .
+                    "Estos productos ya fueron preparados por cocina/bar."
+                );
+            }
+            
+            // ✨ VALIDACIÓN ADICIONAL: Verificar si el pedido ya tiene comprobante
+            $tieneComprobante = $pedido->comprobante !== null;
+            if ($tieneComprobante) {
+                return back()->with('error', 'No se puede eliminar un pedido que ya ha sido facturado.');
+            }
+            
             // Devolver stock de todos los productos
             foreach ($pedido->detalles as $detalle) {
                 $detalle->producto->increment('stock', $detalle->cantidad);

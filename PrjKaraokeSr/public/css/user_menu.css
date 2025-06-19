@@ -4,7 +4,7 @@ html, body {
     margin: 0 !important;
     padding: 0 !important;
     overflow-x: hidden;
-    background: url('/images/dragon_background.png') center center/cover no-repeat fixed;
+    background: url('../images/dragon_background.png') center center/cover no-repeat fixed;
 }
 .body-overlay {
     position: fixed;
@@ -22,7 +22,7 @@ body {
     left: 0;
     width: 100vw;
     height: 153px;
-    background: url('/images/fondo_karaoke.jpg') center center/cover no-repeat;
+    background: url('../images/fondo_karaoke.jpg') center center/cover no-repeat;
     display: flex;
     align-items: center;
     justify-content: flex-start;

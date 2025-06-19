@@ -29,54 +29,100 @@
             </div>
         </div>
 
-        <!-- Productos por Categoria -->
-        @foreach($productosPorCategoria as $categoriaData)
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">{{ $categoriaData['categoria']->nombre }}</h6>
-                </div>
-                <div class="card-body">
-                    @foreach($categoriaData['productos'] as $detalle)
-                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded" id="producto-{{ $detalle->id_pedido_detalle }}">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">{{ $detalle->producto->nombre }}</h6>
-                                <small class="text-muted">Precio: S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</small>
-                            </div>
-                            <div class="d-flex align-items-center gap-3">
-                                <!-- Control de cantidad -->
-                                <div class="d-flex align-items-center">
-                                    <button type="button" 
-                                            class="btn btn-outline-secondary btn-sm btn-restar" 
-                                            data-detalle-id="{{ $detalle->id_pedido_detalle }}">-</button>
-                                    <input type="number" 
-                                           name="productos[{{ $detalle->id_pedido_detalle }}][cantidad]" 
-                                           id="cantidad-{{ $detalle->id_pedido_detalle }}"
-                                           value="{{ $detalle->cantidad }}" 
-                                           class="form-control mx-2 text-center" 
-                                           style="width: 60px;" 
-                                           min="1"
-                                           max="{{ $detalle->cantidad + $detalle->producto->stock }}"
-                                           data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">
-                                    <button type="button" 
-                                            class="btn btn-outline-secondary btn-sm btn-sumar" 
-                                            data-detalle-id="{{ $detalle->id_pedido_detalle }}"
-                                            data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">+</button>
-                                </div>
-                                
-                                <input type="hidden" name="productos[{{ $detalle->id_pedido_detalle }}][accion]" value="modificar">
-                                
-                                <!-- Boton eliminar -->
-                                <button type="button" 
-                                        class="btn btn-danger btn-sm btn-eliminar" 
-                                        data-detalle-id="{{ $detalle->id_pedido_detalle }}">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+        <!-- Productos Editables por Categoria -->
+        @if(!empty($productosPorCategoria))
+            <div class="alert alert-info">
+                <strong>Productos Editables:</strong> Solo puedes editar productos que no han sido marcados como listos para entrega.
             </div>
-        @endforeach
+            
+            @foreach($productosPorCategoria as $categoriaData)
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">{{ $categoriaData['categoria']->nombre }} (Editables)</h6>
+                    </div>
+                    <div class="card-body">
+                        @foreach($categoriaData['productos'] as $detalle)
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded" id="producto-{{ $detalle->id_pedido_detalle }}">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ $detalle->producto->nombre }}</h6>
+                                    <small class="text-muted">Precio: S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</small>
+                                    <span class="badge bg-warning ms-2">{{ $detalle->estado_item }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <!-- Control de cantidad -->
+                                    <div class="d-flex align-items-center">
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary btn-sm btn-restar" 
+                                                data-detalle-id="{{ $detalle->id_pedido_detalle }}">-</button>
+                                        <input type="number" 
+                                               name="productos[{{ $detalle->id_pedido_detalle }}][cantidad]" 
+                                               id="cantidad-{{ $detalle->id_pedido_detalle }}"
+                                               value="{{ $detalle->cantidad }}" 
+                                               class="form-control mx-2 text-center" 
+                                               style="width: 60px;" 
+                                               min="1"
+                                               max="{{ $detalle->cantidad + $detalle->producto->stock }}"
+                                               data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary btn-sm btn-sumar" 
+                                                data-detalle-id="{{ $detalle->id_pedido_detalle }}"
+                                                data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">+</button>
+                                    </div>
+                                    
+                                    <input type="hidden" name="productos[{{ $detalle->id_pedido_detalle }}][accion]" value="modificar">
+                                    
+                                    <!-- Boton eliminar -->
+                                    <button type="button" 
+                                            class="btn btn-danger btn-sm btn-eliminar" 
+                                            data-detalle-id="{{ $detalle->id_pedido_detalle }}">
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        @endif
+
+        <!-- Productos No Editables (Listos para Entrega) -->
+        @if(!empty($productosNoEditablesPorCategoria))
+            <div class="alert alert-warning">
+                <strong>Productos Listos para Entrega:</strong> Estos productos ya están preparados y no pueden ser modificados.
+            </div>
+            
+            @foreach($productosNoEditablesPorCategoria as $categoriaData)
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0">{{ $categoriaData['categoria']->nombre }} (Listos para Entrega)</h6>
+                    </div>
+                    <div class="card-body">
+                        @foreach($categoriaData['productos'] as $detalle)
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded bg-light">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ $detalle->producto->nombre }}</h6>
+                                    <small class="text-muted">Precio: S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</small>
+                                    <span class="badge bg-success ms-2">{{ $detalle->estado_item }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <!-- Cantidad solo lectura -->
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary">Cantidad: {{ $detalle->cantidad }}</span>
+                                    </div>
+                                    <span class="text-muted">No editable</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        @endif
+
+        @if(empty($productosPorCategoria) && empty($productosNoEditablesPorCategoria))
+            <div class="alert alert-info text-center">
+                Este pedido no tiene productos para mostrar.
+            </div>
+        @endif
 
         <!-- Footer -->
         <x-app-footer 
@@ -131,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
     // Funcionalidad de los botones del footer
     const agregarUrl = "{{ route('pedidos.agregar', $pedido->id_pedido) }}";
     

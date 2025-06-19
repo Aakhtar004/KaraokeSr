@@ -18,56 +18,63 @@
     <div class="search-container mb-4">
         <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nombre o categoría..." onkeyup="filterProducts()">
 
-    <form id="pedidoForm" action="{{ route('cocina.inventario.pedido') }}" method="POST">
+    <form id="pedidoForm" action="{{ route('barra.inventario.pedido') }}" method="POST">
         @csrf
         <div class="footer-buttons">
             <button type="button" id="btnLimpiar" class="btn-limpiar" onclick="limpiarSeleccion()">Limpiar</button>
             <button type="submit" id="btnEnviar" class="btn-enviar" disabled>Enviar</button>
         </div>
         <div class="accordion mt-4" id="accordionCategorias">
-            @foreach($categorias_producto as $categoria)
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading{{ $categoria->id_categoria_producto }}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $categoria->id_categoria_producto }}" aria-expanded="false" aria-controls="collapse{{ $categoria->id_categoria_producto }}">
-                        {{ $categoria->nombre }}
-                    </button>
-                </h2>
-                <div id="collapse{{ $categoria->id_categoria_producto }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $categoria->id_categoria_producto }}" data-bs-parent="#accordionCategorias">
-                    <div class="accordion-body">
-                        @php
-                            $productosCategoria = $productos->where('id_categoria_producto', $categoria->id_categoria_producto);
-                        @endphp
+            @if($categorias_producto->isEmpty())
+                <div class="alert alert-info text-center">
+                    <p>No hay categorías de inventario de bar disponibles.</p>
+                    <small>Categorías esperadas: Frutas, Ingredientes, Bebidas de Barra, Licores de Barra</small>
+                </div>
+            @else
+                @foreach($categorias_producto as $categoria)
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ $categoria->id_categoria_producto }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $categoria->id_categoria_producto }}" aria-expanded="false" aria-controls="collapse{{ $categoria->id_categoria_producto }}">
+                            {{ $categoria->nombre }}
+                        </button>
+                    </h2>
+                    <div id="collapse{{ $categoria->id_categoria_producto }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $categoria->id_categoria_producto }}" data-bs-parent="#accordionCategorias">
+                        <div class="accordion-body">
+                            @php
+                                $productosCategoria = $productos->where('id_categoria_producto', $categoria->id_categoria_producto);
+                            @endphp
 
-                        @if($productosCategoria->isEmpty())
-                            <p>No hay productos en esta categoría.</p>
-                        @else
-                            <div class="row">
-                                @foreach($productosCategoria as $producto)
-                                    <div class="col-md-4 mb-4">
-                                        <div class="card h-100 position-relative">
-                                            <!-- Checkbox en la esquina superior derecha -->
-                                            <input type="checkbox" name="productos[]" value="{{ $producto->id_producto }}" class="form-check-input position-absolute top-0 end-0 m-2 producto-checkbox" style="z-index:2;">
-                                            <div class="card-body">
-                                                @if($producto->estado == 0)
-                                                    <div class="alert alert-warning p-1 text-center mb-2" style="font-size:0.9rem;">PEDIDO</div>
-                                                @endif
-                                                @if($producto->imagen_url)
-                                                    <img src="{{ $producto->imagen_url }}" class="card-img-top" alt="{{ $producto->nombre }}">
-                                                @endif
-                                                <h5 class="card-title">{{ $producto->nombre }}</h5>
-                                                <p class="card-text">{{ $producto->descripcion }}</p>
-                                                <p><strong>Precio:</strong> S/ {{ number_format($producto->precio_unitario, 2) }}</p>
-                                                <p><strong>Stock:</strong> {{ $producto->stock }} {{ $producto->unidad_medida }}</p>
+                            @if($productosCategoria->isEmpty())
+                                <p>No hay productos en esta categoría.</p>
+                            @else
+                                <div class="row">
+                                    @foreach($productosCategoria as $producto)
+                                        <div class="col-md-4 mb-4">
+                                            <div class="card h-100 position-relative">
+                                                <!-- Checkbox en la esquina superior derecha -->
+                                                <input type="checkbox" name="productos[]" value="{{ $producto->id_producto }}" class="form-check-input position-absolute top-0 end-0 m-2 producto-checkbox" style="z-index:2;">
+                                                <div class="card-body">
+                                                    @if($producto->estado == 0)
+                                                        <div class="alert alert-warning p-1 text-center mb-2" style="font-size:0.9rem;">PEDIDO</div>
+                                                    @endif
+                                                    @if($producto->imagen_url)
+                                                        <img src="{{ $producto->imagen_url }}" class="card-img-top" alt="{{ $producto->nombre }}">
+                                                    @endif
+                                                    <h5 class="card-title">{{ $producto->nombre }}</h5>
+                                                    <p class="card-text">{{ $producto->descripcion }}</p>
+                                                    <!-- <p><strong>Precio:</strong> S/ {{ number_format($producto->precio_unitario, 2) }}</p>
+                                                    <p><strong>Stock:</strong> {{ $producto->stock }} {{ $producto->unidad_medida }}</p> -->
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
-            </div>
-            @endforeach
+                @endforeach
+            @endif
         </div>
     </form>
 </div>

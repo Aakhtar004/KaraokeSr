@@ -1,0 +1,90 @@
+/* public/css/agregar_producto.css */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+
+/* Estilos generales */
+body {
+    background: url('/images/dragon_background.png') center center/cover no-repeat fixed;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Header */
+.custom-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    background: rgba(24, 19, 20, 0.82);
+    display: flex;
+    align-items: center;
+    z-index: 10;
+}
+
+.back-button {
+    position: absolute;
+    left: 20px;
+    color: #e5735c;
+    font-size: 1.5em;
+}
+
+.back-button img {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+}
+
+.page-title {
+    color: #e5735c;
+    font-size: 1.2em;
+    margin: 0 auto;
+}
+
+/* Formulario */
+.form-container {
+    margin-top: 100px;
+    padding: 20px;
+}
+
+.card {
+    background: rgba(255, 182, 182, 0.8) !important;
+    border-radius: 20px !important;
+    padding: 20px;
+}
+
+/* Inputs */
+.form-control {
+    border-radius: 10px !important;
+    padding: 10px !important;
+}
+
+.input-group-text {
+    background: white !important;
+    border-radius: 10px 0 0 10px !important;
+}
+
+/* Botones */
+.btn-outline-secondary {
+    border-radius: 10px !important;
+}
+
+/* Toggle switch */
+.form-check-input {
+    width: 50px !important;
+    height: 25px !important;
+}
+
+/* Botón principal */
+.btn.text-white {
+    background: #8B4513 !important;
+    border-radius: 20px !important;
+    padding: 12px !important;
+    font-weight: 500 !important;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .card {
+        width: 90% !important;
+        margin: 0 auto;
+    }
+}

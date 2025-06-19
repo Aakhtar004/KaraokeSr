@@ -20,10 +20,18 @@ class controller_cocina extends Controller
 {
     public function ver_cocina_inventario() 
     {
-        $productos = productos::whereIn('area_destino', ['cocina', 'ambos'])->get();
-        $categorias_producto = categorias_producto::whereIn('id_categoria_producto', 
-            $productos->pluck('id_categoria_producto')->unique()
-        )->get();
+        // Categorías específicas para el inventario de cocina
+        $categoriasCocina = ['Condimentos y Especias', 'Materias Primas', 'Salsas Y Aderezos', 'No comestibles'];
+        
+        // Obtener solo las categorías específicas de cocina
+        $categorias_producto = categorias_producto::whereIn('nombre', $categoriasCocina)
+            ->where('estado', 1)
+            ->get();
+        
+        // Obtener productos que pertenecen a estas categorías específicas
+        $productos = productos::whereIn('id_categoria_producto', 
+            $categorias_producto->pluck('id_categoria_producto'))
+            ->get();
 
         return view('view_cocina.cocina_inventario', compact('categorias_producto', 'productos'));
     }

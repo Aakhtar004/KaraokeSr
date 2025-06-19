@@ -17,22 +17,49 @@
 
         <!-- Tipo de comprobante -->
         <div class="mb-3">
+            <label class="form-label">Tipo de comprobante</label>
             <select class="form-select" name="tipo_comprobante" id="tipo_comprobante" required>
                 <option value="boleta">Boleta</option>
                 <option value="factura">Factura</option>
             </select>
         </div>
 
-        <!-- RUC o DNI -->
+        <!-- RUC o DNI con botón de consulta -->
         <div class="mb-3">
             <label class="form-label mb-0" id="labelDocumento" for="documento">Boleta</label>
             <span class="text-danger" id="tipoDoc">DNI</span>
             <div class="input-group">
                 <input type="text" class="form-control" name="documento" id="documento" placeholder="Ingrese DNI" required>
+                <!-- BOTÓN PARA CONSULTAR DNI/RUC -->
+                <button type="button" class="btn btn-outline-primary" id="consultarBtn">
+                    <i class="bi bi-search"></i> Consultar
+                </button>
                 <button type="button" class="btn btn-outline-dark" id="vistaPreviaBtn">Vista Previa</button>
                 <button type="button" class="btn btn-outline-secondary" id="randomBtn">Randomizar</button>
             </div>
+            <!-- ÁREA PARA MOSTRAR RESULTADO DE LA CONSULTA -->
+            <div id="resultadoConsulta" class="mt-2" style="display: none;">
+                <small class="text-success">
+                    <i class="bi bi-check-circle"></i>
+                    <span id="nombreCompleto"></span>
+                </small>
+                <!-- INFORMACIÓN ADICIONAL PARA RUC -->
+                <div id="infoRuc" style="display: none;">
+                    <small class="text-muted d-block">
+                        <i class="bi bi-building"></i>
+                        <span id="direccionEmpresa"></span>
+                    </small>
+                    <small class="text-muted d-block">
+                        <i class="bi bi-info-circle"></i>
+                        Estado: <span id="estadoEmpresa"></span> | 
+                        Condición: <span id="condicionEmpresa"></span>
+                    </small>
+                </div>
+            </div>
         </div>
+
+        <!-- CAMPO OCULTO PARA EL NOMBRE DEL CLIENTE -->
+        <input type="hidden" name="nombre_cliente" id="nombre_cliente" value="Cliente">
 
         <!-- Métodos de pago -->
         <div class="mb-3">
@@ -74,6 +101,7 @@
             </div>
             <div class="modal-body">
                 <form id="enviarCorreoForm">
+                    @csrf
                     <div class="mb-3">
                         <label class="form-label">DNI del cliente</label>
                         <input type="text" class="form-control" name="dni_correo" required>
@@ -95,13 +123,156 @@
 <script>
 let comprobanteId = null;
 
+// Cambiar etiquetas según tipo de comprobante
 document.getElementById('tipo_comprobante').addEventListener('change', function() {
     const tipo = this.value;
-    document.getElementById('labelDocumento').textContent = tipo === 'factura' ? 'Factura' : 'Boleta';
-    document.getElementById('tipoDoc').textContent = tipo === 'factura' ? 'RUC' : 'DNI';
-    document.getElementById('documento').placeholder = tipo === 'factura' ? 'Ingrese RUC' : 'Ingrese DNI';
+    const labelDocumento = document.getElementById('labelDocumento');
+    const tipoDoc = document.getElementById('tipoDoc');
+    const documento = document.getElementById('documento');
+    const resultadoConsulta = document.getElementById('resultadoConsulta');
+    const infoRuc = document.getElementById('infoRuc');
+    const nombreCliente = document.getElementById('nombre_cliente');
+    
+    // Verificar que los elementos existen antes de usarlos
+    if (labelDocumento) labelDocumento.textContent = tipo === 'factura' ? 'Factura' : 'Boleta';
+    if (tipoDoc) tipoDoc.textContent = tipo === 'factura' ? 'RUC' : 'DNI';
+    if (documento) documento.placeholder = tipo === 'factura' ? 'Ingrese RUC' : 'Ingrese DNI';
+    
+    // Limpiar resultado anterior al cambiar tipo
+    if (resultadoConsulta) resultadoConsulta.style.display = 'none';
+    if (infoRuc) infoRuc.style.display = 'none';
+    if (nombreCliente) nombreCliente.value = 'Cliente';
 });
 
+// ✨ FUNCIÓN UNIFICADA PARA CONSULTAR DNI O RUC CON VALIDACIÓN MEJORADA
+document.getElementById('consultarBtn').addEventListener('click', function() {
+    const documento = document.getElementById('documento').value.trim();
+    const tipoComprobante = document.getElementById('tipo_comprobante').value;
+    const btn = this;
+    const resultadoDiv = document.getElementById('resultadoConsulta');
+    const nombreCompletoSpan = document.getElementById('nombreCompleto');
+    const nombreClienteInput = document.getElementById('nombre_cliente');
+    const infoRucDiv = document.getElementById('infoRuc');
+    
+    console.log('Iniciando consulta...', { documento, tipoComprobante });
+    
+    // Verificar que todos los elementos existen
+    if (!resultadoDiv || !nombreCompletoSpan || !nombreClienteInput || !infoRucDiv) {
+        console.error('Algunos elementos del DOM no fueron encontrados');
+        alert('Error interno: elementos de la interfaz no encontrados');
+        return;
+    }
+    
+    // Determinar si es DNI o RUC y validar formato
+    let esValido = false;
+    let endpoint = '';
+    let tipoBusqueda = '';
+    
+    if (tipoComprobante === 'boleta') {
+        // Validar DNI (8 dígitos)
+        esValido = /^[0-9]{8}$/.test(documento);
+        endpoint = '{{ route("api.consultar_dni") }}';
+        tipoBusqueda = 'dni';
+        
+        if (!esValido) {
+            alert('Por favor ingrese un DNI válido de 8 dígitos');
+            return;
+        }
+    } else {
+        // Validar RUC (11 dígitos, empezar con 10 o 20)
+        esValido = /^(10|20)[0-9]{9}$/.test(documento);
+        endpoint = '{{ route("api.consultar_ruc") }}';
+        tipoBusqueda = 'ruc';
+        
+        if (!esValido) {
+            alert('Por favor ingrese un RUC válido de 11 dígitos que empiece con 10 o 20');
+            return;
+        }
+    }
+    
+    console.log('Endpoint a usar:', endpoint);
+    
+    // Deshabilitar botón y mostrar estado de carga
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Consultando...';
+    resultadoDiv.style.display = 'none';
+    infoRucDiv.style.display = 'none';
+    
+    // Preparar datos para enviar
+    const requestData = {};
+    requestData[tipoBusqueda] = documento;
+    
+    console.log('Datos a enviar:', requestData);
+    
+    // Hacer petición AJAX al endpoint correspondiente
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        
+        // Verificar si la respuesta es JSON válida
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('La respuesta no es JSON válido');
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        
+        if (data.success) {
+            if (tipoBusqueda === 'dni') {
+                // Mostrar resultado para DNI
+                nombreCompletoSpan.textContent = data.data.nombre_completo;
+                nombreClienteInput.value = data.data.nombre_completo;
+                infoRucDiv.style.display = 'none';
+            } else {
+                // Mostrar resultado para RUC
+                nombreCompletoSpan.textContent = data.data.razon_social;
+                nombreClienteInput.value = data.data.razon_social;
+                
+                // Mostrar información adicional de la empresa
+                const direccionEmpresa = document.getElementById('direccionEmpresa');
+                const estadoEmpresa = document.getElementById('estadoEmpresa');
+                const condicionEmpresa = document.getElementById('condicionEmpresa');
+                
+                if (direccionEmpresa) direccionEmpresa.textContent = data.data.direccion || 'No disponible';
+                if (estadoEmpresa) estadoEmpresa.textContent = data.data.estado || 'No disponible';
+                if (condicionEmpresa) condicionEmpresa.textContent = data.data.condicion || 'No disponible';
+                infoRucDiv.style.display = 'block';
+            }
+            resultadoDiv.style.display = 'block';
+        } else {
+            // Mostrar error
+            console.error('Error de API:', data.message);
+            alert('Error: ' + data.message);
+            nombreClienteInput.value = 'Cliente';
+        }
+    })
+    .catch(error => {
+        console.error('Error completo:', error);
+        alert('Error de conexión al consultar el ' + (tipoBusqueda === 'dni' ? 'DNI' : 'RUC') + '. Revisa la consola para más detalles.');
+        nombreClienteInput.value = 'Cliente';
+    })
+    .finally(() => {
+        // Restaurar botón a estado original
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-search"></i> Consultar';
+    });
+});
+
+// Agregar métodos de pago adicionales
 document.getElementById('addMetodoPago').addEventListener('click', function(e) {
     e.preventDefault();
     const extra = document.createElement('div');
@@ -124,13 +295,20 @@ document.getElementById('addMetodoPago').addEventListener('click', function(e) {
     document.getElementById('metodosPagoExtras').appendChild(extra);
 });
 
+// Generar números aleatorios
 document.getElementById('randomBtn').addEventListener('click', function() {
     const tipo = document.getElementById('tipo_comprobante').value;
-    document.getElementById('documento').value = tipo === 'factura'
-        ? Math.floor(10000000000 + Math.random() * 90000000000)
-        : Math.floor(10000000 + Math.random() * 90000000);
+    if (tipo === 'factura') {
+        // Generar RUC aleatorio válido (empezar con 20)
+        const rucAleatorio = '20' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+        document.getElementById('documento').value = rucAleatorio;
+    } else {
+        // Generar DNI aleatorio
+        document.getElementById('documento').value = Math.floor(10000000 + Math.random() * 90000000);
+    }
 });
 
+// Procesar formulario de facturación
 document.getElementById('facturacionForm').addEventListener('submit', function(e) {
     e.preventDefault();
     

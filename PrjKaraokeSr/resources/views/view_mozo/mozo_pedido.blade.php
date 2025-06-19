@@ -101,6 +101,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // NO pre-seleccionar productos cuando se está editando
+    // Los productos deben empezar sin seleccionar, independientemente del contexto
+    
     // Inicializar contador
     actualizarContador();
 
@@ -128,11 +131,11 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const id = this.dataset.id;
             const input = document.getElementById('cantidad-' + id);
+            // Obtener el stock desde el div contenedor de la card
             const card = this.closest('.card');
-            const stock = parseInt(card.dataset.stock);
-            
+            const maxStock = parseInt(card.dataset.stock);
             const currentValue = parseInt(input.value);
-            if (currentValue < stock) {
+            if (currentValue < maxStock) {
                 input.value = currentValue + 1;
             }
         });
@@ -143,17 +146,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (button.textContent.trim() === 'Limpiar') {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
-                // Limpiar checkboxes
+                // Limpiar todos los checkboxes
                 checkboxes.forEach(cb => {
-                    if (!cb.disabled) {
-                        cb.checked = false;
-                    }
+                    cb.checked = false;
                 });
-                // Resetear cantidades
-                document.querySelectorAll('[id^="cantidad-"]').forEach(input => {
+                // Resetear todas las cantidades a 1
+                document.querySelectorAll('input[type="number"]').forEach(input => {
                     input.value = 1;
                 });
-                // Actualizar contador
                 actualizarContador();
             });
         }

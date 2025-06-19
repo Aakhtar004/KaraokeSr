@@ -16,7 +16,7 @@
 </div>
 
 <div class="cocina-historial-container">
-    <div class="cocina-historial-content">
+    <div class="cocina-historial-content" id="pedidosContainer">
         @if($pedidos->isEmpty())
             <div class="no-pedidos">
                 <p>No hay pedidos pendientes</p>
@@ -26,12 +26,36 @@
                 $pedidosAgrupados = $pedidos->groupBy('pedido.id_pedido');
             @endphp
             @foreach($pedidosAgrupados as $idPedido => $detalles)
-                <div class="card-historial" data-pedido-id="{{ $idPedido }}" data-mesa-numero="{{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}">
+                <div class="card-historial" 
+                     data-pedido-id="{{ $idPedido }}" 
+                     data-mesa-numero="{{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}"
+                     data-fecha="{{ $detalles->first()->fecha_creacion }}">
                     <div class="card-historial-lateral">
-                        <span>{{ $loop->iteration }}</span>
+                        <span class="numero-orden">{{ $loop->iteration }}</span>
                     </div>
                     <div class="card-historial-main">
-                        <div class="card-historial-mesa">Mesa {{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}</div>
+                        <!-- ✨ HEADER CON NÚMERO DE MESA PROMINENTE -->
+                        <div class="card-historial-mesa-header">
+                            <h2 class="mesa-titulo">Mesa {{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}</h2>
+                            <span class="fecha-hora">
+                                @php
+                                    $fechaCreacion = $detalles->first()->fecha_creacion;
+                                    if (is_string($fechaCreacion)) {
+                                        try {
+                                            $fechaFormateada = \Carbon\Carbon::parse($fechaCreacion)->format('H:i');
+                                        } catch (\Exception $e) {
+                                            $fechaFormateada = $fechaCreacion;
+                                        }
+                                    } elseif ($fechaCreacion instanceof \Carbon\Carbon || $fechaCreacion instanceof \DateTime) {
+                                        $fechaFormateada = $fechaCreacion->format('H:i');
+                                    } else {
+                                        $fechaFormateada = 'N/A';
+                                    }
+                                @endphp
+                                {{ $fechaFormateada }}
+                            </span>
+                        </div>
+                        
                         <div class="card-historial-table-container">
                             <table class="card-historial-table">
                                 <thead>
@@ -64,7 +88,11 @@
                                 <strong>{{ $detalles->first()->pedido->tiempo_aproximado ?? '20 min' }}</strong>
                                 <div class="card-historial-tiempo-line"></div>
                             </div>
-                            <button class="btn-listo" data-id="{{ $detalles->first()->id_pedido_detalle }}" data-mesa="{{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}">Listo</button>
+                            <button class="btn-listo" 
+                                    data-id="{{ $detalles->first()->id_pedido_detalle }}" 
+                                    data-mesa="{{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}">
+                                Listo
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -98,102 +126,173 @@
         <p id="successMessage"></p>
     </div>
 </div>
-@endsection
 
-@push('scripts')
-<script src="{{ asset('js/app.js') }}" type="module"></script>
 <script>
-let pedidoIdActual = null;
+let pedidoDetalleIdActual = null;
+let mesaNumeroActual = null;
 
-function confirmarPedido(pedidoId, mesaNumero) {
-    pedidoIdActual = pedidoId;
-    const modal = document.getElementById('confirmModal');
-    const mesaSpan = document.getElementById('mesaNumero');
-    const detallesDiv = document.getElementById('pedidoDetalles');
+// ✨ FUNCIÓN PARA ORDENAR PEDIDOS POR FECHA Y REENUMERAR
+function ordenarYRenumerarPedidos() {
+    const container = document.getElementById('pedidosContainer');
+    const cards = Array.from(container.querySelectorAll('.card-historial'));
     
-    mesaSpan.textContent = mesaNumero;
+    if (cards.length === 0) return;
     
-    // Obtener detalles del pedido
-    const card = document.querySelector(`[data-pedido-id="${pedidoId}"]`);
-    const filas = card.querySelectorAll('tbody tr');
-    let detallesHTML = '<div class="pedido-detalles">';
-    filas.forEach(fila => {
-        const producto = fila.cells[2].textContent;
-        const cantidad = fila.cells[1].textContent;
-        detallesHTML += `<div class="detalle-item">
-            <span class="producto">${producto}</span>
-            <span class="cantidad">x${cantidad}</span>
-        </div>`;
+    // Ordenar por fecha (más reciente primero)
+    cards.sort((a, b) => {
+        const fechaA = new Date(a.dataset.fecha || 0);
+        const fechaB = new Date(b.dataset.fecha || 0);
+        return fechaB - fechaA; // Orden descendente (más reciente primero)
     });
-    detallesHTML += '</div>';
-    detallesDiv.innerHTML = detallesHTML;
-    modal.style.display = 'block';
+    
+    // Reenumerar y reorganizar en el DOM
+    cards.forEach((card, index) => {
+        const numeroOrden = card.querySelector('.numero-orden');
+        if (numeroOrden) {
+            numeroOrden.textContent = index + 1;
+        }
+        
+        // Reordenar en el DOM
+        container.appendChild(card);
+    });
+    
+    console.log('Pedidos reordenados por fecha y renumerados');
+}
+
+function mostrarModalConfirmacion(detalleId, mesaNumero, detalles) {
+    pedidoDetalleIdActual = detalleId;
+    mesaNumeroActual = mesaNumero;
+    
+    document.getElementById('mesaNumero').textContent = mesaNumero;
+    const pedidoDetalles = document.getElementById('pedidoDetalles');
+    pedidoDetalles.innerHTML = '';
+
+    detalles.forEach(detalle => {
+        const detalleDiv = document.createElement('div');
+        detalleDiv.className = 'detalle-item';
+        detalleDiv.innerHTML = `
+            <span class="producto">${detalle.nombre}</span>
+            <span class="cantidad">x${detalle.cantidad}</span>
+        `;
+        pedidoDetalles.appendChild(detalleDiv);
+    });
+
+    document.getElementById('confirmModal').style.display = 'block';
 }
 
 function cerrarModal() {
-    const modal = document.getElementById('confirmModal');
-    modal.style.display = 'none';
+    document.getElementById('confirmModal').style.display = 'none';
+    pedidoDetalleIdActual = null;
+    mesaNumeroActual = null;
 }
 
-function marcarPedidoListo() {
-    if (!pedidoIdActual) return;
-    
-    fetch(`/cocina/marcar-pedido-listo/${pedidoIdActual}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            cerrarModal();
-            mostrarMensajeExito(data.mesa);
-        } else {
-            alert('Error al marcar el pedido como listo');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al marcar el pedido como listo');
-    });
-}
-
-function mostrarMensajeExito(mesa) {
-    const modal = document.getElementById('successModal');
-    const mensaje = document.getElementById('successMessage');
-    mensaje.textContent = `Pedido de la mesa N° ${mesa} enviado correctamente :)`;
-    
-    modal.style.display = 'block';
-    
+function mostrarModalExito(mensaje) {
+    document.getElementById('successMessage').textContent = mensaje;
+    document.getElementById('successModal').style.display = 'block';
     setTimeout(() => {
-        modal.style.display = 'none';
+        document.getElementById('successModal').style.display = 'none';
         window.location.reload();
     }, 2000);
 }
 
-// Cerrar modal al hacer clic en la X
-document.querySelector('.close').onclick = cerrarModal;
+function marcarPedidoListo() {
+    if (!pedidoDetalleIdActual) return;
 
-// Cerrar modal al hacer clic fuera
-window.onclick = function(event) {
-    const modal = document.getElementById('confirmModal');
-    if (event.target == modal) {
-        cerrarModal();
-    }
+    // ✨ CORRECCIÓN: Usar la helper route() de Laravel correctamente con el parámetro
+    const url = "{{ route('cocina.pedido.listo', ':detalle') }}".replace(':detalle', pedidoDetalleIdActual);
+    
+    console.log('URL construida:', url);
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            cerrarModal();
+            mostrarModalExito(`Pedido de la Mesa ${data.mesa} marcado como listo.`);
+            
+            // Remover la card del pedido con animación
+            const card = document.querySelector(`.card-historial[data-pedido-id="${pedidoDetalleIdActual}"]`);
+            if (card) {
+                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(-20px)';
+                
+                setTimeout(() => {
+                    card.remove();
+                    // ✨ REORDENAR DESPUÉS DE ELIMINAR
+                    ordenarYRenumerarPedidos();
+                    
+                    // Verificar si no quedan más pedidos
+                    const remainingCards = document.querySelectorAll('.card-historial');
+                    if (remainingCards.length === 0) {
+                        const content = document.querySelector('.cocina-historial-content');
+                        content.innerHTML = `
+                            <div class="no-pedidos">
+                                <p>No hay pedidos pendientes</p>
+                            </div>
+                        `;
+                    }
+                }, 300);
+            }
+        } else {
+            alert('Error al marcar el pedido como listo: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al marcar el pedido como listo.');
+    });
 }
 
-// Inicializar los botones Listo
-document.addEventListener('DOMContentLoaded', function() {
-    const botonesListo = document.querySelectorAll('.btn-listo');
-    botonesListo.forEach(boton => {
-        boton.addEventListener('click', function() {
-            const pedidoId = this.closest('.card-historial').dataset.pedidoId;
-            const mesaNumero = this.closest('.card-historial').dataset.mesaNumero;
-            confirmarPedido(pedidoId, mesaNumero);
+document.addEventListener('DOMContentLoaded', () => {
+    // ✨ ORDENAR PEDIDOS AL CARGAR LA PÁGINA
+    ordenarYRenumerarPedidos();
+    
+    // Configurar eventos para los botones "Listo"
+    const confirmButtons = document.querySelectorAll('.btn-listo');
+    confirmButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const detalleId = button.getAttribute('data-id');
+            const mesaNumero = button.getAttribute('data-mesa');
+            
+            // Obtener detalles del pedido de la tabla
+            const detalles = Array.from(button.closest('.card-historial').querySelectorAll('tbody tr')).map(row => {
+                return {
+                    cantidad: row.querySelector('td[data-cantidad]').getAttribute('data-cantidad'),
+                    nombre: row.querySelector('td[data-nombre-producto]').getAttribute('data-nombre-producto')
+                };
+            });
+            
+            mostrarModalConfirmacion(detalleId, mesaNumero, detalles);
         });
+    });
+    
+    // Configurar eventos para cerrar modales
+    const closeModalButtons = document.querySelectorAll('.close');
+    closeModalButtons.forEach(button => {
+        button.addEventListener('click', cerrarModal);
+    });
+    
+    // Cerrar modal al hacer clic fuera
+    window.addEventListener('click', (event) => {
+        const modal = document.getElementById('confirmModal');
+        if (event.target === modal) {
+            cerrarModal();  
+        }
     });
 });
 </script>
-@endpush
+@endsection

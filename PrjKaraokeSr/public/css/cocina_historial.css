@@ -14,7 +14,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    background: url('/images/fondo_cocina.png') center center/cover no-repeat;
+    background: url('../images/fondo_cocina.png') center center/cover no-repeat;
     margin-bottom: 15px;
     border-radius: 0 0 24px 24px;
     overflow: hidden;
@@ -291,6 +291,7 @@ body {
 .card-historial-tiempo { /* ... igual que barra ... */ }
 .card-historial-tiempo-label { /* ... igual que barra ... */ }
 .card-historial-tiempo-line { /* ... igual que barra ... */ }
+
 .btn-listo {
     background: #e5735c;
     color: white;

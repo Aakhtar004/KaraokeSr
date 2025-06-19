@@ -17,7 +17,21 @@
 </div>
 
 <div class="container">
-    <div class="row gy-3">
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    <div class="row">
       @foreach($pedidos as $pedido)
         @php
           // Cuenta los detalles listos para entrega
@@ -50,6 +64,8 @@
                   $todosListos = $pedido->detalles->every(function($detalle) {
                       return $detalle->estado_item === 'LISTO_PARA_ENTREGA';
                   });
+                  // NUEVA VALIDACIÓN: Verificar si tiene productos listos (no se puede eliminar)
+                  $tieneProductosListos = $pedido->detalles->where('estado_item', 'LISTO_PARA_ENTREGA')->count() > 0;
                 @endphp
                 
                 @if(!$tienePagos && $estadoReal === 'PENDIENTE')
@@ -68,13 +84,23 @@
                     </button>
                   @endif
                   
-                  <form action="{{ route('pedidos.eliminar', $pedido->id_pedido) }}" method="POST" style="display:inline;">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-eliminar" onclick="return confirm('¿Estás seguro de eliminar este pedido?')" title="Eliminar pedido">
+                  {{-- ✨ BOTÓN DE ELIMINAR CON VALIDACIÓN MEJORADA --}}
+                  @if($tieneProductosListos)
+                    <button type="button" class="btn btn-eliminar" disabled title="No se puede eliminar: tiene productos listos para entrega">
                       <i class="fas fa-trash"></i>
                     </button>
-                  </form>
+                    <small class="text-warning d-block mt-1">
+                      <i class="fas fa-exclamation-triangle"></i> Tiene productos preparados
+                    </small>
+                  @else
+                    <form action="{{ route('pedidos.eliminar', $pedido->id_pedido) }}" method="POST" style="display:inline;">
+                      @csrf
+                      @method('DELETE')
+                      <button type="submit" class="btn btn-eliminar" onclick="return confirmarEliminacion(event)" title="Eliminar pedido">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  @endif
                 @else
                   <span class="badge badge-pagado">PAGADO</span>
                   @if($pedido->comprobante)
@@ -95,13 +121,30 @@
     </a>
   </div>
 
-  <script>
-  function confirmarFinalizacion(event) {
-      if (!confirm('Estas seguro?')) {
-          event.preventDefault();
-          return false;
-      }
-      return true;
-  }
-  </script>
+<script>
+// ✨ FUNCIÓN PARA CONFIRMAR ELIMINACIÓN CON VALIDACIÓN ADICIONAL
+function confirmarEliminacion(event) {
+    event.preventDefault();
+    
+    const confirmacion = confirm(
+        '¿Está seguro de eliminar este pedido?\n\n' +
+        'Esta acción:\n' +
+        '• Eliminará todos los productos del pedido\n' +
+        '• Devolverá el stock de los productos\n' +
+        '• Liberará la mesa\n' +
+        '• NO se puede deshacer\n\n' +
+        'Solo se pueden eliminar pedidos sin productos preparados.'
+    );
+    
+    if (confirmacion) {
+        event.target.closest('form').submit();
+    }
+    
+    return false;
+}
+
+function confirmarFinalizacion(event) {
+    return confirm('¿Está seguro de finalizar este pedido? Se procederá a la facturación.');
+}
+</script>
 @endsection

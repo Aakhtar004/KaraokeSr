@@ -1,0 +1,72 @@
+/* Estilos para el header */
+.custom-header {
+    background: #2d1a12;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 2px solid #ff6b6b;
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.back-button img {
+    width: 40px;
+    height: 40px;
+}
+
+.page-title {
+    color: #ff6b6b;
+    font-size: 1.2em;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: white;
+    font-size: 0.9em;
+    margin: 5px 0 0;
+}
+
+/* El resto del CSS */
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.menu-button {
+    background: white;
+    border-radius: 15px;
+    padding: 20px 10px;
+    text-decoration: none;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.menu-button:hover {
+    transform: translateY(-3px);
+}
+
+.menu-button img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 10px;
+    object-fit: contain;
+}
+
+.menu-button.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}

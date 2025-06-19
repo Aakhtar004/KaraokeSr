@@ -13,13 +13,20 @@ use App\Http\Controllers\controller_cocina;
 use App\Http\Controllers\controller_barra;
 use App\Http\Controllers\Auth\controller_login;
 
+// Import the DNI and RUC controller
+use App\Http\Controllers\Api\controller_api;
+
 Route::get('/', function () {
     return view('auth.login');
 });
 
 Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
     // Ruta para todos los usuarios
-    Route::get('/user_menu', [controller_karaoke::class, 'ver_user_menu'])->name('vista.user_menu');       
+    Route::get('/user_menu', [controller_karaoke::class, 'ver_user_menu'])->name('vista.user_menu');
+
+    // ✨ RUTAS DE API COMPARTIDAS - ACCESIBLES PARA TODOS LOS USUARIOS AUTENTICADOS
+    Route::post('api/consultar-dni', [controller_api::class, 'consultarDni'])->name('api.consultar_dni');
+    Route::post('api/consultar-ruc', [controller_api::class, 'consultarRuc'])->name('api.consultar_ruc');
 
     // Rutas para administradores
     Route::middleware(['midctu:administrador'])->group(function () {
@@ -30,6 +37,8 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         
         // Historial y compras
         Route::get('/view_admin/admin_historial', [controller_admin::class, 'ver_admin_historial'])->name('vista.admin_historial');
+        Route::get('/view_admin/admin_historial/filtrar', [controller_admin::class, 'filtrar_historial_pedidos'])->name('admin.filtrar_historial');
+        Route::get('/view_admin/admin_historial/detalle/{fecha}', [controller_admin::class, 'ver_detalle_pedido'])->name('admin.detalle_pedido');
         Route::get('/view_admin/admin_compras', [controller_admin::class, 'ver_admin_compras'])->name('vista.admin_compras');
 
         // Gestión de usuarios
@@ -41,22 +50,38 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         // Agregar productos
         Route::get('/view_admin/admin_agregar_producto', [controller_admin::class, 'ver_admin_agregar_producto'])->name('vista.admin_agregar_producto');
         Route::post('/admin/productos', [controller_admin::class, 'store_producto'])->name('admin.productos.store');
+        
+        // Gestión de promociones
+        Route::get('/view_admin/admin_promociones', [controller_admin::class, 'ver_admin_promociones'])->name('vista.admin_promociones');
+        Route::get('/admin/promociones/agregar', [controller_admin::class, 'agregar_promocion'])->name('admin.agregar_promocion');
+        Route::post('/admin/promociones', [controller_admin::class, 'store_promocion'])->name('admin.store_promocion');
+        Route::get('/admin/promociones/{id}/editar', [controller_admin::class, 'editar_promocion'])->name('admin.editar_promocion');
+        Route::put('/admin/promociones/{id}', [controller_admin::class, 'actualizar_promocion'])->name('admin.actualizar_promocion');
+        Route::delete('/admin/promociones/{id}/eliminar', [controller_admin::class, 'eliminar_promocion'])->name('admin.eliminar_promocion');
+        Route::post('/admin/promociones/{id}/toggle', [controller_admin::class, 'toggle_promocion'])->name('admin.toggle_promocion');
+        
+        // Generar lista de compras
+        Route::get('/view_admin/admin_generar_lista_compras', [controller_admin::class, 'ver_admin_generar_lista_compras'])->name('vista.admin_generar_lista_compras');
+        Route::post('/admin/productos/reabastecer', [controller_admin::class, 'marcar_productos_reabastecidos'])->name('admin.productos.reabastecer');
+    
     });
     
     // Rutas para cocineros
     Route::middleware(['midctu:cocinero'])->group(function () {
         Route::get('/view_cocina/cocina_historial', [controller_cocina::class, 'ver_cocina_historial'])->name('vista.cocina_historial');
         Route::get('/view_cocina/cocina_inventario', [controller_cocina::class, 'ver_cocina_inventario'])->name('vista.cocina_inventario');
-        Route::post('/cocina/pedido/{detalle}/listo', [controller_cocina::class, 'marcarPedidoListo'])->name('cocina.pedido.listo');
         Route::post('/cocina/inventario/pedido', [controller_cocina::class, 'marcarProductosPedido'])->name('cocina.inventario.pedido');
-        Route::post('/cocina/marcar-pedido-listo/{id}', [controller_cocina::class, 'marcarPedidoListo'])->name('cocina.marcar_pedido_listo_ajax');
+        
+        Route::post('/cocina/pedido/{detalle}/listo', [controller_cocina::class, 'marcarPedidoListo'])->name('cocina.pedido.listo');
     });
 
     // Rutas para bartenders
     Route::middleware(['midctu:bartender'])->group(function () {
         Route::get('/view_barra/barra_historial', [controller_barra::class, 'ver_barra_historial'])->name('vista.barra_historial');
         Route::get('/view_barra/barra_inventario', [controller_barra::class, 'ver_barra_inventario'])->name('vista.barra_inventario');
-        Route::post('/barra/marcar-pedido-listo/{idPedido}', [controller_barra::class, 'marcarPedidoListo'])->name('barra.pedido.listo');
+        Route::post('/barra/inventario/pedido', [controller_cocina::class, 'marcarProductosPedido'])->name('barra.inventario.pedido');
+
+        Route::post('/barra/pedido/{detalle}/listo', [controller_barra::class, 'marcarPedidoListo'])->name('barra.pedido.listo');
     });
 
     // Rutas para meseros

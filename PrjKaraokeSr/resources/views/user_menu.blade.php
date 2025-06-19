@@ -54,29 +54,24 @@
             </a>
             <a class="menu-card btn btn-secondary btn-lg" href="{{ route('vista.admin_agregar_producto') }}">
                 <img src="{{ asset('images/icon_inventario.png') }}" alt="Agregar">
-                <span>Agregar Producto</span>
+                <br><span>Agregar Producto</span>
             </a>
             <a class="menu-card btn btn-secondary btn-lg" href="{{ route('vista.admin_gestion_usuarios') }}">
                 <img src="{{ asset('images/icon_inventario.png') }}" alt="Gestionar">
                 <span>Gestionar Usuarios</span>
             </a>
-            <a class="menu-card btn btn-secondary btn-lg disabled" href="{{ route('vista.admin_historial') }}">
-                <img src="{{ asset('images/icon_inventario.png') }}" alt="Historial"> <span>Ver Historial de Compras</span>
+            <a class="menu-card btn btn-secondary btn-lg " href="{{ route('vista.admin_historial')}}">
+                <img src="{{ asset('images/icon_inventario.png') }}" alt="Historial"> 
+                <span>Ver Historial de Compras</span>
             </a>
-            <a class="menu-card btn btn-secondary btn-lg disabled" href="{{ route('vista.admin_compras') }}">
-                <img src="{{ asset('images/icon_inventario.png') }}" alt="Compras"> <span>Generar lista de Compras</span>
+            <a class="menu-card btn btn-secondary btn-lg " href="{{ route('vista.admin_generar_lista_compras') }}">
+                <img src="{{ asset('images/icon_inventario.png') }}" alt="Compras"> 
+                <span>Generar lista de Compras</span>
             </a>
-            <a class="menu-card btn btn-secondary btn-lg disabled" href="#">
-                <img src="{{ asset('images/icon_inventario.png') }}" alt="Promociones"> <span>Agregar Promociones</span>
+            <a class="menu-card btn btn-secondary btn-lg" href="{{ route('vista.admin_promociones') }}">
+                <img src="{{ asset('images/icon_inventario.png') }}" alt="Promociones"> 
+                <span>Gestionar Promociones</span>
             </a>
-        @endif
-
-        @elseif($user->rol === 'mesero')
-            <a class="btn btn-secondary btn-lg" href="{{ route('vista.mozo_historial') }}">Ver Historial de Pedidos</a>
-
-        @elseif($user->rol === 'cocinero')
-            <a class="btn btn-secondary btn-lg" href="{{ route('vista.cocina_historial') }}">Ver Historial de Pedidos</a>
-            <a class="btn btn-secondary btn-lg" href="{{ route('vista.cocina_inventario') }}">Hacer Control de Inventario</a>
         @endif
     </div>
 @endsection

@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\View;
 // Importar la clase Auth para la autenticación
 use Illuminate\Support\Facades\Auth;
 
+use App\Services\ApiConsultaService;
+
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -17,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
+        $this->app->singleton(ApiConsultaService::class, function ($app) {
+            return new ApiConsultaService();
+        });
     }
 
     /**

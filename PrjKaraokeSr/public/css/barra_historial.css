@@ -436,7 +436,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    background: url('/images/fondo_barra.png') center center/cover no-repeat;
+    background: url('../images/fondo_barra.png') center center/cover no-repeat;
     margin-bottom: 15px;
     border-radius: 0 0 24px 24px;
     overflow: hidden;

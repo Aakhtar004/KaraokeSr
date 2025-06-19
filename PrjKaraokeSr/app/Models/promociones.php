@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class promociones extends Model
 {
+    use HasFactory;
+
     protected $table = 'promociones';
     protected $primaryKey = 'id_promocion';
 
@@ -35,11 +38,7 @@ class promociones extends Model
     // Relaciones
     public function productos()
     {
-        return $this->belongsToMany(
-            productos::class,
-            'promocion_productos',
-            'id_promocion',
-            'id_producto'
-        )->withPivot('cantidad_producto_en_promo', 'precio_original_referencia');
+        return $this->hasMany(promocion_productos::class, 'id_promocion');
     }
 }
+
