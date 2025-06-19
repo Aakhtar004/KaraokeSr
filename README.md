@@ -170,14 +170,6 @@ Con XAMPP ya tienes Apache corriendo, por lo que el sistema estará disponible d
 
 **El sistema estará disponible en:** http://localhost/PrjKaraokeSr/public
 
-**Opcional - Servidor Laravel:**
-```bash
-# Si prefieres usar el servidor de desarrollo de Laravel
-php artisan serve
-
-# Esto lo hará disponible en: http://localhost:8000
-```
-
 ---
 
 ## 🧪 Verificar Instalación
@@ -332,7 +324,7 @@ PrjKaraokeSr/
 
 ### Frontend
 - Componentes Blade reutilizables
-- Bootstrap 5 para UI responsiva
+- CSS y Bootstrap 5
 - Validación JavaScript en tiempo real
 
 ---
@@ -388,26 +380,6 @@ El Sistema de Karaoke está listo para usar. Accede con las credenciales proporc
 
 <a name="desarrollo"></a>
 ## 🔧 Desarrollo
-
-### Testing
-
-```bash
-# Ejecutar todas las pruebas
-composer run test
-
-# Ejecutar pruebas con cobertura
-php artisan test --coverage
-```
-
-### Linting y Formato
-
-```bash
-# Formato de código con Laravel Pint
-./vendor/bin/pint
-
-# Análisis estático
-./vendor/bin/phpstan analyse
-```
 
 ### Comandos Artisan Útiles
 
