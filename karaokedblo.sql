@@ -29,9 +29,9 @@ CREATE TABLE IF NOT EXISTS `categorias_producto` (
   `fecha_actualizacion` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id_categoria_producto`),
   UNIQUE KEY `nombre` (`nombre`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Categorías de los productos';
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Categorías de los productos';
 
--- Dumping data for table karaokedb.categorias_producto: ~7 rows (approximately)
+-- Dumping data for table karaokedb.categorias_producto: ~15 rows (approximately)
 INSERT INTO `categorias_producto` (`id_categoria_producto`, `nombre`, `descripcion`, `estado`, `fecha_creacion`, `fecha_actualizacion`) VALUES
 	(1, 'Piqueos', 'Entradas y acompañamientos para compartir', 1, '2025-05-25 07:42:37', '2025-05-25 07:42:37'),
 	(2, 'Cocteles', 'Tragos preparados, clásicos y de la casa', 1, '2025-05-25 07:42:59', '2025-05-25 07:42:59'),
@@ -39,7 +39,15 @@ INSERT INTO `categorias_producto` (`id_categoria_producto`, `nombre`, `descripci
 	(4, 'Bebidas', 'Bebidas sin alcohol', 1, '2025-05-25 07:43:42', '2025-05-25 07:43:42'),
 	(5, 'Cervezas', 'Cervezas individuales', 1, '2025-05-25 07:44:02', '2025-05-25 07:44:02'),
 	(6, 'Jarras', 'Jarras de tragos o mezclas para compartir', 1, '2025-05-25 07:44:22', '2025-05-25 07:44:22'),
-	(7, 'Baldes', 'Baldes de cervezas para grupos', 1, '2025-05-25 07:44:37', '2025-05-25 07:44:37');
+	(7, 'Baldes', 'Baldes de cervezas para grupos', 1, '2025-05-25 07:44:37', '2025-05-25 07:44:37'),
+	(8, 'Condimentos y Especias', NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(9, 'Materias Primas', NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(10, 'Salsas Y Aderezos', NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(11, 'No comestibles', NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(12, 'Frutas', NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(13, 'Ingredientes', NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:11:25'),
+	(14, 'Bebidas de Barra', NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(15, 'Licores de Barra', NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56');
 
 -- Dumping structure for table karaokedb.comprobantes
 CREATE TABLE IF NOT EXISTS `comprobantes` (
@@ -75,7 +83,7 @@ CREATE TABLE IF NOT EXISTS `comprobantes` (
   KEY `idx_comprobante_cliente_doc` (`numero_documento_cliente`),
   CONSTRAINT `fk_comprobante_pedido` FOREIGN KEY (`id_pedido`) REFERENCES `pedidos` (`id_pedido`) ON UPDATE CASCADE,
   CONSTRAINT `fk_comprobante_usuario_cajero` FOREIGN KEY (`id_usuario_cajero`) REFERENCES `usuarios` (`id_usuario`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Comprobantes de pago emitidos';
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Comprobantes de pago emitidos';
 
 -- Dumping data for table karaokedb.comprobantes: ~8 rows (approximately)
 INSERT INTO `comprobantes` (`id_comprobante`, `id_pedido`, `id_usuario_cajero`, `tipo_documento_cliente`, `numero_documento_cliente`, `nombre_razon_social_cliente`, `direccion_cliente`, `serie_comprobante`, `numero_correlativo_comprobante`, `fecha_emision`, `moneda`, `subtotal_comprobante`, `igv_aplicado_tasa`, `monto_igv`, `monto_total_comprobante`, `tipo_comprobante`, `metodo_pago`, `referencia_pago`, `estado_comprobante`, `qr_code_data`, `hash_sunat`, `notas_comprobante`, `fecha_anulacion`) VALUES
@@ -88,7 +96,10 @@ INSERT INTO `comprobantes` (`id_comprobante`, `id_pedido`, `id_usuario_cajero`, 
 	(13, 12, 2, 'DNI', '38828486', 'Cliente', NULL, 'B001', 7, '2025-06-08 21:32:23', 'PEN', 38.14, 18.00, 6.86, 45.00, 'BOLETA', 'YAPE', NULL, 'EMITIDO', 'QR_DATA_PLACEHOLDER', 'HASH_PLACEHOLDER', NULL, NULL),
 	(14, 11, 2, 'DNI', '59263582', 'Cliente', NULL, 'B001', 8, '2025-06-08 21:35:10', 'PEN', 28.81, 18.00, 5.19, 34.00, 'BOLETA', 'YAPE', NULL, 'EMITIDO', 'QR_DATA_PLACEHOLDER', 'HASH_PLACEHOLDER', NULL, NULL),
 	(15, 9, 2, 'DNI', '87095738', 'Cliente', NULL, 'B001', 9, '2025-06-08 21:44:49', 'PEN', 1694.92, 18.00, 305.08, 2000.00, 'BOLETA', 'YAPE', NULL, 'EMITIDO', 'QR_DATA_PLACEHOLDER', 'HASH_PLACEHOLDER', NULL, NULL),
-	(16, 5, 2, 'DNI', '40398441', 'Cliente', NULL, 'B001', 10, '2025-06-09 02:30:31', 'PEN', 267.80, 18.00, 48.20, 316.00, 'BOLETA', 'YAPE', NULL, 'EMITIDO', 'QR_DATA_PLACEHOLDER', 'HASH_PLACEHOLDER', NULL, NULL);
+	(16, 5, 2, 'DNI', '40398441', 'Cliente', NULL, 'B001', 10, '2025-06-09 02:30:31', 'PEN', 267.80, 18.00, 48.20, 316.00, 'BOLETA', 'YAPE', NULL, 'EMITIDO', 'QR_DATA_PLACEHOLDER', 'HASH_PLACEHOLDER', NULL, NULL),
+	(17, 4, 2, 'DNI', '86625059', 'Cliente', NULL, 'B001', 11, '2025-06-15 09:02:24', 'PEN', 44.07, 18.00, 7.93, 52.00, 'BOLETA', 'EFECTIVO', NULL, 'EMITIDO', 'QR_DATA_PLACEHOLDER', 'HASH_PLACEHOLDER', NULL, NULL),
+	(18, 3, 2, 'DNI', '72446825', 'AHMED HASAN AKHTAR OVIEDO', NULL, 'B001', 12, '2025-06-16 12:56:26', 'PEN', 63.56, 18.00, 11.44, 75.00, 'BOLETA', 'EFECTIVO', NULL, 'EMITIDO', 'QR_DATA_PLACEHOLDER', 'HASH_PLACEHOLDER', NULL, NULL),
+	(19, 2, 2, 'DNI', '72446825', 'Cliente', NULL, 'B001', 13, '2025-06-19 10:06:12', 'PEN', 379.66, 18.00, 68.34, 448.00, 'BOLETA', 'EFECTIVO', NULL, 'EMITIDO', 'QR_DATA_PLACEHOLDER', 'HASH_PLACEHOLDER', NULL, NULL);
 
 -- Dumping structure for table karaokedb.mesas
 CREATE TABLE IF NOT EXISTS `mesas` (
@@ -104,17 +115,17 @@ CREATE TABLE IF NOT EXISTS `mesas` (
 
 -- Dumping data for table karaokedb.mesas: ~22 rows (approximately)
 INSERT INTO `mesas` (`id_mesa`, `numero_mesa`, `estado`, `fecha_creacion`, `fecha_actualizacion`) VALUES
-	(1, '01', 'disponible', '2025-05-27 04:10:49', '2025-06-02 05:14:56'),
-	(2, '02', 'ocupada', '2025-05-27 04:10:49', '2025-05-27 05:48:25'),
-	(3, '03', 'ocupada', '2025-05-27 04:10:49', '2025-06-02 05:14:14'),
-	(4, '04', 'ocupada', '2025-05-27 05:48:18', '2025-06-02 05:14:25'),
-	(5, '05', 'disponible', '2025-05-28 15:27:43', '2025-06-08 21:30:31'),
+	(1, '01', 'disponible', '2025-05-27 04:10:49', '2025-06-19 04:57:16'),
+	(2, '02', 'disponible', '2025-05-27 04:10:49', '2025-06-19 04:56:27'),
+	(3, '03', 'disponible', '2025-05-27 04:10:49', '2025-06-16 07:56:26'),
+	(4, '04', 'disponible', '2025-05-27 05:48:18', '2025-06-16 23:12:33'),
+	(5, '05', 'ocupada', '2025-05-28 15:27:43', '2025-06-19 05:39:22'),
 	(6, '06', 'disponible', '2025-05-28 15:27:48', '2025-06-08 16:44:49'),
 	(7, '07', 'disponible', '2025-05-28 15:27:52', '2025-05-28 15:27:52'),
 	(8, '08', 'disponible', '2025-05-28 15:28:07', '2025-05-28 15:28:07'),
 	(9, '09', 'disponible', '2025-05-28 15:28:11', '2025-05-28 15:28:11'),
 	(10, '10', 'disponible', '2025-05-28 15:28:15', '2025-06-08 16:32:23'),
-	(11, '11', 'disponible', '2025-05-28 15:28:18', '2025-06-06 00:51:51'),
+	(11, '11', 'disponible', '2025-05-28 15:28:18', '2025-06-19 05:06:12'),
 	(12, '12', 'disponible', '2025-05-28 15:30:39', '2025-06-08 16:35:10'),
 	(13, '13', 'disponible', '2025-05-28 15:30:39', '2025-05-28 15:30:39'),
 	(14, '14', 'disponible', '2025-05-28 15:30:39', '2025-06-02 21:25:12'),
@@ -144,9 +155,9 @@ CREATE TABLE IF NOT EXISTS `pagos_pedido_detalle` (
   KEY `idx_pagos_pedido_detalle_metodo_pago` (`metodo_pago`),
   CONSTRAINT `fk_pagos_pedido_detalle_comprobante` FOREIGN KEY (`id_comprobante`) REFERENCES `comprobantes` (`id_comprobante`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_pagos_pedido_detalle_pedido_detalle` FOREIGN KEY (`id_pedido_detalle`) REFERENCES `pedido_detalles` (`id_pedido_detalle`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Detalla los métodos de pago para ítems específicos o cantidades de ítems dentro de un comprobante.';
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Detalla los métodos de pago para ítems específicos o cantidades de ítems dentro de un comprobante.';
 
--- Dumping data for table karaokedb.pagos_pedido_detalle: ~12 rows (approximately)
+-- Dumping data for table karaokedb.pagos_pedido_detalle: ~19 rows (approximately)
 INSERT INTO `pagos_pedido_detalle` (`id_pago_pedido_detalle`, `id_comprobante`, `id_pedido_detalle`, `cantidad_item_pagada`, `monto_pagado`, `metodo_pago`, `referencia_pago`, `fecha_creacion`, `fecha_actualizacion`) VALUES
 	(5, 7, 17, 3, 36.00, 'YAPE', 'REF-00000001-17', '2025-06-02 05:15:21', '2025-06-02 05:15:21'),
 	(6, 8, 16, 3, 75.00, 'YAPE', 'REF-00000002-16', '2025-06-02 16:29:28', '2025-06-02 16:29:28'),
@@ -159,7 +170,16 @@ INSERT INTO `pagos_pedido_detalle` (`id_pago_pedido_detalle`, `id_comprobante`, 
 	(13, 14, 22, 2, 34.00, 'YAPE', 'REF-00000008-22', '2025-06-08 16:35:10', '2025-06-08 16:35:10'),
 	(14, 15, 20, 2, 2000.00, 'YAPE', 'REF-00000009-20', '2025-06-08 16:44:49', '2025-06-08 16:44:49'),
 	(15, 16, 13, 2, 280.00, 'YAPE', 'REF-00000010-13', '2025-06-08 21:30:31', '2025-06-08 21:30:31'),
-	(16, 16, 14, 3, 36.00, 'YAPE', 'REF-00000010-14', '2025-06-08 21:30:31', '2025-06-08 21:30:31');
+	(16, 16, 14, 3, 36.00, 'YAPE', 'REF-00000010-14', '2025-06-08 21:30:31', '2025-06-08 21:30:31'),
+	(17, 17, 7, 1, 18.00, 'EFECTIVO', 'REF-00000011-7', '2025-06-15 04:02:24', '2025-06-15 04:02:24'),
+	(18, 17, 15, 2, 34.00, 'EFECTIVO', 'REF-00000011-15', '2025-06-15 04:02:24', '2025-06-15 04:02:24'),
+	(19, 18, 4, 2, 24.00, 'EFECTIVO', 'REF-00000012-4', '2025-06-16 07:56:26', '2025-06-16 07:56:26'),
+	(20, 18, 26, 3, 51.00, 'EFECTIVO', 'REF-00000012-26', '2025-06-16 07:56:26', '2025-06-16 07:56:26'),
+	(21, 19, 3, 3, 45.00, 'EFECTIVO', 'REF-00000013-3', '2025-06-19 05:06:12', '2025-06-19 05:06:12'),
+	(22, 19, 27, 1, 250.00, 'EFECTIVO', 'REF-00000013-27', '2025-06-19 05:06:12', '2025-06-19 05:06:12'),
+	(23, 19, 28, 10, 20.00, 'EFECTIVO', 'REF-00000013-28', '2025-06-19 05:06:12', '2025-06-19 05:06:12'),
+	(24, 19, 29, 4, 8.00, 'EFECTIVO', 'REF-00000013-29', '2025-06-19 05:06:12', '2025-06-19 05:06:12'),
+	(25, 19, 30, 5, 125.00, 'EFECTIVO', 'REF-00000013-30', '2025-06-19 05:06:12', '2025-06-19 05:06:12');
 
 -- Dumping structure for table karaokedb.pedidos
 CREATE TABLE IF NOT EXISTS `pedidos` (
@@ -178,13 +198,13 @@ CREATE TABLE IF NOT EXISTS `pedidos` (
   KEY `idx_pedido_fecha` (`fecha_hora_pedido`),
   CONSTRAINT `fk_pedido_mesa` FOREIGN KEY (`id_mesa`) REFERENCES `mesas` (`id_mesa`) ON UPDATE CASCADE,
   CONSTRAINT `fk_pedido_usuario_mesero` FOREIGN KEY (`id_usuario_mesero`) REFERENCES `usuarios` (`id_usuario`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pedidos de los clientes';
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pedidos de los clientes';
 
--- Dumping data for table karaokedb.pedidos: ~13 rows (approximately)
+-- Dumping data for table karaokedb.pedidos: ~14 rows (approximately)
 INSERT INTO `pedidos` (`id_pedido`, `id_mesa`, `id_usuario_mesero`, `fecha_hora_pedido`, `estado_pedido`, `total_pedido`, `notas_adicionales`, `fecha_actualizacion`) VALUES
-	(2, 2, 2, '2025-05-26 17:45:00', 'PENDIENTE', 45.00, NULL, '2025-06-02 05:13:57'),
-	(3, 3, 2, '2025-05-26 18:00:00', 'PENDIENTE', 24.00, 'Extra hielo', '2025-06-02 05:13:58'),
-	(4, 21, 2, '2025-05-28 15:16:07', 'PENDIENTE', 52.00, 'pepe', '2025-06-08 21:32:01'),
+	(2, 11, 2, '2025-05-26 17:45:00', 'PAGADO', 448.00, NULL, '2025-06-19 05:06:12'),
+	(3, 3, 2, '2025-05-26 18:00:00', 'PAGADO', 75.00, 'Extra hielo', '2025-06-16 07:56:26'),
+	(4, 21, 2, '2025-05-28 15:16:07', 'PAGADO', 52.00, 'pepe', '2025-06-15 04:02:24'),
 	(5, 5, 2, '2025-06-02 07:03:35', 'PAGADO', 316.00, NULL, '2025-06-08 21:30:31'),
 	(6, 10, 2, '2025-06-02 07:53:56', 'PAGADO', 575.00, 'GOGOGO', '2025-06-02 16:29:28'),
 	(7, 18, 2, '2025-06-02 07:58:10', 'PAGADO', 36.00, 'pipi', '2025-06-02 05:15:21'),
@@ -194,7 +214,8 @@ INSERT INTO `pedidos` (`id_pedido`, `id_mesa`, `id_usuario_mesero`, `fecha_hora_
 	(11, 12, 2, '2025-06-05 23:56:49', 'PAGADO', 34.00, NULL, '2025-06-08 16:35:10'),
 	(12, 10, 2, '2025-06-05 23:57:22', 'PAGADO', 45.00, '5', '2025-06-08 16:32:23'),
 	(13, 11, 2, '2025-06-05 23:57:45', 'PAGADO', 500.00, '05', '2025-06-05 19:56:00'),
-	(14, 11, 2, '2025-06-06 05:50:28', 'PAGADO', 100.00, 'nota1', '2025-06-06 00:51:51');
+	(14, 11, 2, '2025-06-06 05:50:28', 'PAGADO', 100.00, 'nota1', '2025-06-06 00:51:51'),
+	(16, 5, 2, '2025-06-19 10:39:22', 'PENDIENTE', 2506.00, NULL, '2025-06-19 06:05:54');
 
 -- Dumping structure for table karaokedb.pedido_detalles
 CREATE TABLE IF NOT EXISTS `pedido_detalles` (
@@ -217,12 +238,12 @@ CREATE TABLE IF NOT EXISTS `pedido_detalles` (
   CONSTRAINT `fk_pedidodetalle_pedido` FOREIGN KEY (`id_pedido`) REFERENCES `pedidos` (`id_pedido`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_pedidodetalle_producto` FOREIGN KEY (`id_producto`) REFERENCES `productos` (`id_producto`) ON UPDATE CASCADE,
   CONSTRAINT `fk_pedidodetalle_usuario_preparador` FOREIGN KEY (`id_usuario_preparador`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Detalle de los productos por pedido y su estado de preparación';
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Detalle de los productos por pedido y su estado de preparación';
 
--- Dumping data for table karaokedb.pedido_detalles: ~17 rows (approximately)
+-- Dumping data for table karaokedb.pedido_detalles: ~24 rows (approximately)
 INSERT INTO `pedido_detalles` (`id_pedido_detalle`, `id_pedido`, `id_producto`, `cantidad`, `precio_unitario_momento`, `subtotal`, `notas_producto`, `estado_item`, `id_usuario_preparador`, `fecha_creacion`, `fecha_actualizacion_estado`) VALUES
-	(3, 2, 5, 3, 15.00, 45.00, NULL, 'SOLICITADO', 4, '2025-05-27 04:10:49', '2025-05-27 04:10:49'),
-	(4, 3, 69, 2, 12.00, 24.00, NULL, 'SOLICITADO', 3, '2025-05-27 04:10:49', '2025-05-27 22:22:45'),
+	(3, 2, 5, 3, 15.00, 45.00, NULL, 'LISTO_PARA_ENTREGA', 4, '2025-05-27 04:10:49', '2025-06-16 08:20:20'),
+	(4, 3, 69, 2, 12.00, 24.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-05-27 04:10:49', '2025-06-16 07:51:39'),
 	(7, 4, 17, 1, 18.00, 18.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-05-28 15:17:55', '2025-05-29 15:25:53'),
 	(13, 5, 41, 2, 140.00, 280.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-06-02 07:41:49', '2025-06-06 00:39:16'),
 	(14, 5, 69, 3, 12.00, 36.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-06-02 07:41:49', '2025-06-06 00:39:13'),
@@ -236,7 +257,15 @@ INSERT INTO `pedido_detalles` (`id_pedido_detalle`, `id_pedido`, `id_producto`, 
 	(22, 11, 8, 2, 17.00, 34.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-06-05 23:56:49', '2025-06-06 00:39:11'),
 	(23, 12, 5, 3, 15.00, 45.00, NULL, 'LISTO_PARA_ENTREGA', 4, '2025-06-05 23:57:22', '2025-06-06 00:38:49'),
 	(24, 13, 39, 2, 250.00, 500.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-06-05 23:57:45', '2025-06-05 19:55:46'),
-	(25, 14, 4, 4, 25.00, 100.00, NULL, 'LISTO_PARA_ENTREGA', 4, '2025-06-06 05:50:28', '2025-06-06 00:51:10');
+	(25, 14, 4, 4, 25.00, 100.00, NULL, 'LISTO_PARA_ENTREGA', 4, '2025-06-06 05:50:28', '2025-06-06 00:51:10'),
+	(26, 3, 8, 3, 17.00, 51.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-06-15 09:03:38', '2025-06-16 07:51:39'),
+	(27, 2, 39, 1, 250.00, 250.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-06-19 01:18:00', '2025-06-19 03:51:00'),
+	(28, 2, 1, 10, 2.00, 20.00, NULL, 'LISTO_PARA_ENTREGA', 4, '2025-06-19 07:06:02', '2025-06-19 04:30:22'),
+	(29, 2, 1, 4, 2.00, 8.00, NULL, 'LISTO_PARA_ENTREGA', 4, '2025-06-19 09:01:17', '2025-06-19 04:30:28'),
+	(30, 2, 3, 5, 25.00, 125.00, NULL, 'LISTO_PARA_ENTREGA', 4, '2025-06-19 09:44:03', '2025-06-19 04:44:15'),
+	(32, 16, 39, 6, 250.00, 1500.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-06-19 10:39:22', '2025-06-19 06:12:16'),
+	(33, 16, 40, 5, 200.00, 1000.00, NULL, 'LISTO_PARA_ENTREGA', 3, '2025-06-19 10:42:25', '2025-06-19 06:12:28'),
+	(34, 16, 1, 3, 2.00, 6.00, NULL, 'LISTO_PARA_ENTREGA', 4, '2025-06-19 11:05:54', '2025-06-19 06:12:38');
 
 -- Dumping structure for table karaokedb.productos
 CREATE TABLE IF NOT EXISTS `productos` (
@@ -259,18 +288,18 @@ CREATE TABLE IF NOT EXISTS `productos` (
   KEY `idx_producto_nombre` (`nombre`),
   KEY `idx_producto_estado` (`estado`),
   CONSTRAINT `fk_producto_categoria` FOREIGN KEY (`id_categoria_producto`) REFERENCES `categorias_producto` (`id_categoria_producto`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Productos ofrecidos en el establecimiento';
+) ENGINE=InnoDB AUTO_INCREMENT=180 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Productos ofrecidos en el establecimiento';
 
--- Dumping data for table karaokedb.productos: ~87 rows (approximately)
+-- Dumping data for table karaokedb.productos: ~153 rows (approximately)
 INSERT INTO `productos` (`id_producto`, `id_categoria_producto`, `area_destino`, `codigo_interno`, `nombre`, `descripcion`, `precio_unitario`, `stock`, `unidad_medida`, `imagen_url`, `estado`, `fecha_creacion`, `fecha_actualizacion`) VALUES
-	(1, 1, 'cocina', NULL, 'Alitas Broaster', 'Piqueo para compartir', 2.00, 0, 'Unidad', NULL, 0, '2025-05-25 07:42:44', '2025-06-08 20:24:31'),
-	(2, 1, 'cocina', NULL, 'Alitas BBQ', 'Piqueo para compartir', 25.00, 1, 'Unidad', NULL, 0, '2025-05-25 07:42:44', '2025-06-08 21:31:37'),
-	(3, 1, 'cocina', NULL, 'Chicharrón de Pollo', 'Piqueo para compartir', 25.00, 50, 'Unidad', NULL, 0, '2025-05-25 07:42:44', '2025-05-27 07:01:27'),
+	(1, 1, 'cocina', NULL, 'Alitas Broaster', 'Piqueo para compartir', 2.00, 33, 'Unidad', NULL, 1, '2025-05-25 07:42:44', '2025-06-19 06:05:54'),
+	(2, 1, 'cocina', NULL, 'Alitas BBQ', 'Piqueo para compartir', 25.00, 1, 'Unidad', NULL, 1, '2025-05-25 07:42:44', '2025-06-18 20:15:28'),
+	(3, 1, 'cocina', NULL, 'Chicharrón de Pollo', 'Piqueo para compartir', 25.00, 45, 'Unidad', NULL, 1, '2025-05-25 07:42:44', '2025-06-19 04:44:03'),
 	(4, 1, 'cocina', NULL, 'Salchitodo', 'Piqueo para compartir', 25.00, 43, 'Unidad', NULL, 1, '2025-05-25 07:42:44', '2025-06-06 00:50:28'),
 	(5, 1, 'cocina', NULL, 'Salchipapa', 'Piqueo para compartir', 15.00, 47, 'Unidad', NULL, 1, '2025-05-25 07:42:44', '2025-06-05 18:57:22'),
 	(6, 1, 'cocina', NULL, 'Porción de papas', 'Piqueo para compartir', 10.00, 50, 'Unidad', NULL, 1, '2025-05-25 07:42:44', '2025-05-25 07:42:44'),
 	(7, 1, 'cocina', NULL, 'Tequeños con Queso', 'Piqueo para compartir', 20.00, 50, 'Unidad', NULL, 1, '2025-05-25 07:42:44', '2025-05-25 07:42:44'),
-	(8, 2, 'bar', NULL, 'Negroni', 'Cóctel preparado en barra', 17.00, 47, 'Unidad', '(NULL)', 0, '2025-05-25 07:43:04', '2025-06-08 20:24:40'),
+	(8, 2, 'bar', NULL, 'Negroni', 'Cóctel preparado en barra', 17.00, 44, 'Unidad', '(NULL)', 1, '2025-05-25 07:43:04', '2025-06-18 20:15:30'),
 	(9, 2, 'bar', NULL, 'Clavo Oxidado', 'Cóctel preparado en barra', 18.00, 50, 'Unidad', NULL, 1, '2025-05-25 07:43:04', '2025-05-25 07:43:04'),
 	(10, 2, 'bar', NULL, 'Padrino', 'Cóctel preparado en barra', 18.00, 50, 'Unidad', NULL, 1, '2025-05-25 07:43:04', '2025-05-25 07:43:04'),
 	(11, 2, 'bar', NULL, 'Orgasmo', 'Cóctel preparado en barra', 18.00, 50, 'Unidad', NULL, 1, '2025-05-25 07:43:04', '2025-05-25 07:43:04'),
@@ -298,8 +327,8 @@ INSERT INTO `productos` (`id_producto`, `id_categoria_producto`, `area_destino`,
 	(33, 2, 'bar', NULL, 'Margarita Clásica', 'Cóctel preparado en barra', 18.00, 50, 'Unidad', NULL, 1, '2025-05-25 07:43:04', '2025-05-25 07:43:04'),
 	(34, 2, 'bar', NULL, 'Alejandra', 'Cóctel preparado en barra', 19.00, 50, 'Unidad', NULL, 1, '2025-05-25 07:43:04', '2025-05-25 07:43:04'),
 	(35, 2, 'bar', NULL, 'Piña Colada', 'Cóctel preparado en barra', 19.00, 50, 'Unidad', NULL, 1, '2025-05-25 07:43:04', '2025-05-25 07:43:04'),
-	(39, 3, 'bar', NULL, 'ET. Negra Johnnie Walker', 'Botella sellada para consumo o venta directa', 250.00, 16, 'Botella', NULL, 1, '2025-05-25 07:43:21', '2025-06-05 18:57:45'),
-	(40, 3, 'bar', NULL, 'ET. Roja Johnnie Walker', 'Botella sellada para consumo o venta directa', 200.00, 20, 'Botella', NULL, 1, '2025-05-25 07:43:21', '2025-05-25 07:43:21'),
+	(39, 3, 'bar', NULL, 'ET. Negra Johnnie Walker', 'Botella sellada para consumo o venta directa', 250.00, 9, 'Botella', NULL, 1, '2025-05-25 07:43:21', '2025-06-19 05:39:45'),
+	(40, 3, 'bar', NULL, 'ET. Roja Johnnie Walker', 'Botella sellada para consumo o venta directa', 200.00, 15, 'Botella', NULL, 1, '2025-05-25 07:43:21', '2025-06-19 05:42:25'),
 	(41, 3, 'bar', NULL, 'Jagger 700ml', 'Botella sellada para consumo o venta directa', 140.00, 18, 'Botella', NULL, 1, '2025-05-25 07:43:21', '2025-06-02 02:41:49'),
 	(42, 3, 'bar', NULL, 'Jack Daniel\'s', 'Botella sellada para consumo o venta directa', 170.00, 20, 'Botella', NULL, 1, '2025-05-25 07:43:21', '2025-05-25 07:43:21'),
 	(43, 3, 'bar', NULL, 'Vodka Russkaya/Absolut', 'Botella sellada para consumo o venta directa', 120.00, 20, 'Botella', NULL, 1, '2025-05-25 07:43:21', '2025-05-25 07:43:21'),
@@ -351,7 +380,71 @@ INSERT INTO `productos` (`id_producto`, `id_categoria_producto`, `area_destino`,
 	(111, 7, 'bar', NULL, 'Balde de Pilsen', 'Balde de cervezas', 85.00, 20, 'Balde', NULL, 1, '2025-05-25 07:44:40', '2025-05-25 07:44:40'),
 	(112, 7, 'bar', NULL, 'Balde de Cuz. Trigo', 'Balde de cervezas', 85.00, 20, 'Balde', NULL, 1, '2025-05-25 07:44:40', '2025-05-25 07:44:40'),
 	(114, 1, 'cocina', 'PROD0113', 'manzana', '', 1000.00, 45, 'unidad', 'https://www.recetasnestle.com.pe/sites/default/files/2022-07/tipos-de-manzana-royal-gala.jpg', 1, '2025-06-02 21:34:50', '2025-06-02 21:54:14'),
-	(115, 2, 'bar', 'PROD0115', 'COCTEL DE MARGARITAS', '', 100.00, 8, 'unidad', 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.masquegastronomia.com%2Fblog%2Fcocteles-clasicos-ron-n44&psig=AOvVaw3E8DTpC6G2V8KFgMvfbJe1&ust=1749257583297000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCKjg0rnK240DFQAAAAAdAAAAABAE', 1, '2025-06-06 05:53:13', '2025-06-06 05:53:13');
+	(115, 2, 'bar', 'PROD0115', 'COCTEL DE MARGARITAS', '', 100.00, 8, 'unidad', 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.masquegastronomia.com%2Fblog%2Fcocteles-clasicos-ron-n44&psig=AOvVaw3E8DTpC6G2V8KFgMvfbJe1&ust=1749257583297000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCKjg0rnK240DFQAAAAAdAAAAABAE', 1, '2025-06-06 05:53:13', '2025-06-06 05:53:13'),
+	(116, 8, 'cocina', NULL, 'Harina', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-19 09:14:53'),
+	(117, 8, 'cocina', NULL, 'Sal', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(118, 8, 'cocina', NULL, 'Pimienta', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(119, 8, 'cocina', NULL, 'Ajo en polvo', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(120, 8, 'cocina', NULL, 'Cebolla en polvo', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(121, 8, 'cocina', NULL, 'Orégano', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(122, 8, 'cocina', NULL, 'Comino', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(123, 8, 'cocina', NULL, 'Ají panca', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(124, 8, 'cocina', NULL, 'Ají amarillo', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(125, 8, 'cocina', NULL, 'Sazonador (Doña Gusta)', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(126, 8, 'cocina', NULL, 'Paprika', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(127, 9, 'cocina', NULL, 'Alas de Pollo', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(128, 9, 'cocina', NULL, 'Trozos de Pollo', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(129, 9, 'cocina', NULL, 'Huevo', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(130, 9, 'cocina', NULL, 'Hot Dog', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(131, 9, 'cocina', NULL, 'Papa', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(132, 9, 'cocina', NULL, 'Queso', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(133, 10, 'cocina', NULL, 'Mayonesa', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(134, 10, 'cocina', NULL, 'Kétchup', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(135, 10, 'cocina', NULL, 'Mostaza', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(136, 10, 'cocina', NULL, 'Palta', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(137, 10, 'cocina', NULL, 'Sillao', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(138, 10, 'cocina', NULL, 'Salsa BBQ', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(139, 11, 'cocina', NULL, 'Papel Toalla', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(140, 11, 'cocina', NULL, 'Servilletas', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(141, 11, 'cocina', NULL, 'Palillos', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(142, 11, 'cocina', NULL, 'Taper', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(143, 12, 'bar', NULL, 'Maracuyá', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(144, 12, 'bar', NULL, 'Fresa', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(145, 12, 'bar', NULL, 'Limón', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(146, 12, 'bar', NULL, 'Mango', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(147, 12, 'bar', NULL, 'Piña', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(148, 13, 'bar', NULL, 'Jarabe', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-19 09:14:53'),
+	(149, 13, 'bar', NULL, 'Huevo', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(150, 13, 'bar', NULL, 'Canela', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(151, 13, 'bar', NULL, 'Cereza', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(152, 13, 'bar', NULL, 'Hielo', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(153, 13, 'bar', NULL, 'Sal', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-19 08:19:35'),
+	(154, 13, 'bar', NULL, 'Leche Condensada', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(155, 13, 'bar', NULL, 'Crema de coco', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(156, 14, 'bar', NULL, 'KR Negra', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(157, 14, 'bar', NULL, 'Fanta', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(158, 14, 'bar', NULL, 'Jugo de Naranja', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(159, 14, 'bar', NULL, 'Jugo de Piña', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(160, 14, 'bar', NULL, 'Agua con Gas', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(161, 14, 'bar', NULL, 'Ginger Ale', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(162, 14, 'bar', NULL, 'Agua Tónica', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(163, 15, 'bar', NULL, 'Ron Blanco', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(164, 15, 'bar', NULL, 'Ron Rubio', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(165, 15, 'bar', NULL, 'Bailey', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(166, 15, 'bar', NULL, 'Licor de Café', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(167, 15, 'bar', NULL, 'Pisco', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(168, 15, 'bar', NULL, 'Licor de Menta', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(169, 15, 'bar', NULL, 'Jack Daniel\'s', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(170, 15, 'bar', NULL, 'Jack Daniel\'s Apple', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(171, 15, 'bar', NULL, 'Jack Daniel\'s Fire', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(172, 15, 'bar', NULL, 'Jack Daniel\'s Honey', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(173, 15, 'bar', NULL, 'Jagger', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(174, 15, 'bar', NULL, 'Vodka', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(175, 15, 'bar', NULL, 'Vino Semiseco', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(176, 15, 'bar', NULL, 'Damasco', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(177, 15, 'bar', NULL, 'Beefeater', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(178, 15, 'bar', NULL, 'Amaretto', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56'),
+	(179, 15, 'bar', NULL, 'Licor de Almendras', NULL, 0.00, 0, NULL, NULL, 1, '2025-06-18 19:00:56', '2025-06-18 19:00:56');
 
 -- Dumping structure for table karaokedb.promociones
 CREATE TABLE IF NOT EXISTS `promociones` (
@@ -373,12 +466,12 @@ CREATE TABLE IF NOT EXISTS `promociones` (
   UNIQUE KEY `codigo_promocion` (`codigo_promocion`),
   KEY `idx_promocion_estado` (`estado_promocion`),
   KEY `idx_promocion_fechas` (`fecha_inicio`,`fecha_fin`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tabla para almacenar las promociones ofrecidas';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tabla para almacenar las promociones ofrecidas';
 
 -- Dumping data for table karaokedb.promociones: ~2 rows (approximately)
 INSERT INTO `promociones` (`id_promocion`, `nombre_promocion`, `descripcion_promocion`, `codigo_promocion`, `precio_promocion`, `fecha_inicio`, `fecha_fin`, `estado_promocion`, `imagen_url_promocion`, `dias_aplicables`, `stock_promocion`, `fecha_creacion`, `fecha_actualizacion`) VALUES
-	(1, 'Combo Piqueos', '2 alitas + 1 porción papas', 'CMPQ2025', 50.00, '2025-05-26 00:00:00', '2025-06-30 23:59:59', 'activa', NULL, 'LUN,MAR,MIE,JUE,VIE', NULL, '2025-05-27 04:10:49', '2025-05-27 04:10:49'),
-	(2, '2x1 Cervezas', '2 cervezas al precio de 1', '2X1CV2025', 12.00, '2025-05-26 00:00:00', '2025-06-15 23:59:59', 'activa', NULL, NULL, NULL, '2025-05-27 04:10:49', '2025-05-27 04:10:49');
+	(4, 'Dia de la madre 2x1', '2x1 - Paga 1 y lleva 2', NULL, 6.00, '2025-06-20 00:00:00', '2025-06-27 00:00:00', 'activa', NULL, NULL, 12, '2025-06-20 23:47:17', '2025-06-21 01:26:39'),
+	(5, 'adawdawdawd1212', '2x1 - Paga 1 y lleva 2', NULL, 42.50, '2025-06-20 00:00:00', '2025-06-27 00:00:00', 'activa', NULL, NULL, 12, '2025-06-21 00:46:35', '2025-06-21 01:28:29');
 
 -- Dumping structure for table karaokedb.promocion_productos
 CREATE TABLE IF NOT EXISTS `promocion_productos` (
@@ -394,13 +487,12 @@ CREATE TABLE IF NOT EXISTS `promocion_productos` (
   KEY `fk_promocionproducto_producto` (`id_producto`),
   CONSTRAINT `fk_promocionproducto_producto` FOREIGN KEY (`id_producto`) REFERENCES `productos` (`id_producto`) ON UPDATE CASCADE,
   CONSTRAINT `fk_promocionproducto_promocion` FOREIGN KEY (`id_promocion`) REFERENCES `promociones` (`id_promocion`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tabla de enlace entre promociones y los productos que las componen';
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tabla de enlace entre promociones y los productos que las componen';
 
--- Dumping data for table karaokedb.promocion_productos: ~3 rows (approximately)
+-- Dumping data for table karaokedb.promocion_productos: ~1 rows (approximately)
 INSERT INTO `promocion_productos` (`id_promocion_producto`, `id_promocion`, `id_producto`, `cantidad_producto_en_promo`, `precio_original_referencia`, `fecha_creacion`) VALUES
-	(1, 1, 1, 2, 25.00, '2025-05-27 04:10:49'),
-	(2, 1, 6, 1, 10.00, '2025-05-27 04:10:49'),
-	(3, 2, 69, 2, 12.00, '2025-05-27 04:10:49');
+	(12, 4, 69, 1, 12.00, '2025-06-20 20:26:39'),
+	(13, 5, 111, 1, 85.00, '2025-06-20 20:28:29');
 
 -- Dumping structure for table karaokedb.usuarios
 CREATE TABLE IF NOT EXISTS `usuarios` (
