@@ -53,12 +53,14 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         
         // Gestión de promociones
         Route::get('/view_admin/admin_promociones', [controller_admin::class, 'ver_admin_promociones'])->name('vista.admin_promociones');
-        Route::get('/admin/promociones/agregar', [controller_admin::class, 'agregar_promocion'])->name('admin.agregar_promocion');
         Route::post('/admin/promociones', [controller_admin::class, 'store_promocion'])->name('admin.store_promocion');
-        Route::get('/admin/promociones/{id}/editar', [controller_admin::class, 'editar_promocion'])->name('admin.editar_promocion');
+        Route::get('/admin/promociones/{id}/obtener', [controller_admin::class, 'obtener_promocion'])->name('admin.obtener_promocion');
         Route::put('/admin/promociones/{id}', [controller_admin::class, 'actualizar_promocion'])->name('admin.actualizar_promocion');
         Route::delete('/admin/promociones/{id}/eliminar', [controller_admin::class, 'eliminar_promocion'])->name('admin.eliminar_promocion');
         Route::post('/admin/promociones/{id}/toggle', [controller_admin::class, 'toggle_promocion'])->name('admin.toggle_promocion');
+        
+        // Obtener productos para promociones
+        Route::get('/admin/promociones/productos', [controller_admin::class, 'obtener_productos_promocion'])->name('admin.productos_promocion');
         
         // Generar lista de compras
         Route::get('/view_admin/admin_generar_lista_compras', [controller_admin::class, 'ver_admin_generar_lista_compras'])->name('vista.admin_generar_lista_compras');

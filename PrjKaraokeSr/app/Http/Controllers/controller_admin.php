@@ -490,57 +490,125 @@ class controller_admin extends Controller
     public function ver_admin_promociones()
     {
         $promociones = promociones::with(['productos.producto'])->orderBy('fecha_creacion', 'desc')->get();
-        return view('view_admin.admin_promociones', compact('promociones'));
-    }
-
-    public function agregar_promocion()
-    {
+        
+        // Obtener productos para el modal
         $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
         $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
             $query->whereIn('nombre', $categoriasMesero);
         })->where('estado', 1)->with('categoria')->get();
         
-        return view('view_admin.admin_agregar_promocion', compact('productos'));
+        return view('view_admin.admin_promociones', compact('promociones', 'productos'));
+    }
+
+    // FIX: Nuevo método para obtener datos de promoción específica
+    public function obtener_promocion($id)
+    {
+        try {
+            $promocion = promociones::with(['productos.producto'])->find($id);
+            
+            if (!$promocion) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Promoción no encontrada'
+                ], 404);
+            }
+            
+            $productosIds = $promocion->productos->pluck('id_producto')->toArray();
+            
+            return response()->json([
+                'success' => true,
+                'promocion' => [
+                    'id_promocion' => $promocion->id_promocion,
+                    'nombre_promocion' => $promocion->nombre_promocion,
+                    'descripcion_promocion' => $promocion->descripcion_promocion,
+                    'precio_promocion' => $promocion->precio_promocion,
+                    'fecha_inicio' => $promocion->fecha_inicio->format('Y-m-d'),
+                    'fecha_fin' => $promocion->fecha_fin->format('Y-m-d'),
+                    'stock_promocion' => $promocion->stock_promocion ?? 0,
+                    'productos' => $productosIds
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener promoción', [
+                'promocion_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ], 500);
+        }
     }
 
     public function store_promocion(Request $request)
     {
-        $request->validate([
-            'nombre_promocion' => 'required|string|max:150|unique:promociones,nombre_promocion',
-            'tipo_promocion' => 'required|in:2x1,10%descuento,50%descuento',
-            'cantidad_productos' => 'required|integer|min:1|max:10',
-            'productos' => 'required|array|min:1',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date|after:fecha_inicio'
-        ]);
-
         try {
-            // Calcular precio de promoción basado en tipo
+            $request->validate([
+                'nombre_promocion' => 'required|string|max:150|unique:promociones,nombre_promocion',
+                'tipo_promocion' => 'required|in:2x1,10%descuento,50%descuento',
+                'productos' => 'required|array|min:1',
+                'productos.*' => 'exists:productos,id_producto',
+                'fecha_inicio' => 'required|date|after_or_equal:today',
+                'fecha_fin' => 'required|date|after:fecha_inicio',
+                'stock_promocion' => 'required|integer|min:1|max:999'
+            ], [
+                'nombre_promocion.required' => 'El nombre de la promoción es obligatorio',
+                'nombre_promocion.unique' => 'Ya existe una promoción con este nombre',
+                'tipo_promocion.required' => 'Debe seleccionar un tipo de promoción',
+                'productos.required' => 'Debe seleccionar al menos un producto',
+                'productos.min' => 'Debe seleccionar al menos un producto',
+                'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy',
+                'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
+                'stock_promocion.required' => 'El stock de promoción es obligatorio',
+                'stock_promocion.min' => 'El stock debe ser mínimo 1',
+                'stock_promocion.max' => 'El stock no puede ser mayor a 999'
+            ]);
+
+            // Validar que el stock no exceda el stock mínimo de los productos
             $productosIds = $request->input('productos');
             $productos = productos::whereIn('id_producto', $productosIds)->get();
+            $stockMinimo = $productos->min('stock');
+            
+            if ($request->stock_promocion > $stockMinimo) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "El stock de promoción no puede ser mayor al stock mínimo de los productos seleccionados ({$stockMinimo})"
+                ], 422);
+            }
+
+            // Calcular precio de promoción basado en tipo
             $precioTotal = $productos->sum('precio_unitario');
             
             switch ($request->tipo_promocion) {
                 case '2x1':
                     $precioPromocion = $precioTotal / 2;
+                    $descripcion = '2x1 - Paga 1 y lleva 2';
                     break;
                 case '10%descuento':
                     $precioPromocion = $precioTotal * 0.9;
+                    $descripcion = '10% de descuento';
                     break;
                 case '50%descuento':
                     $precioPromocion = $precioTotal * 0.5;
+                    $descripcion = '50% de descuento';
                     break;
                 default:
                     $precioPromocion = $precioTotal;
+                    $descripcion = $request->tipo_promocion;
             }
 
             $promocion = promociones::create([
                 'nombre_promocion' => $request->nombre_promocion,
-                'descripcion_promocion' => $request->tipo_promocion,
-                'precio_promocion' => $precioPromocion,
+                'descripcion_promocion' => $descripcion,
+                'precio_promocion' => round($precioPromocion, 2),
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin' => $request->fecha_fin,
-                'estado_promocion' => 'activa'
+                'estado_promocion' => 'activa',
+                'stock_promocion' => $request->stock_promocion,
+                'fecha_creacion' => now(),
+                'fecha_actualizacion' => now()
             ]);
 
             // Agregar productos a la promoción
@@ -554,63 +622,120 @@ class controller_admin extends Controller
                 ]);
             }
 
-            return redirect()->route('vista.admin_promociones')
-                ->with('success', 'Promoción agregada exitosamente');
+            return response()->json([
+                'success' => true,
+                'message' => 'Promoción agregada exitosamente'
+            ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            return back()->with('error', 'Error al agregar promoción: ' . $e->getMessage());
+            Log::error('Error al crear promoción', [
+                'request' => $request->all(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ], 500);
         }
-    }
-
-    public function editar_promocion($id)
-    {
-        $promocion = promociones::with('productos.producto')->findOrFail($id);
-        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
-        $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
-            $query->whereIn('nombre', $categoriasMesero);
-        })->where('estado', 1)->with('categoria')->get();
-        
-        return view('view_admin.admin_editar_promocion', compact('promocion', 'productos'));
     }
 
     public function actualizar_promocion(Request $request, $id)
     {
-        $promocion = promociones::findOrFail($id);
-        
-        $request->validate([
-            'nombre_promocion' => 'required|string|max:150|unique:promociones,nombre_promocion,' . $id . ',id_promocion',
-            'tipo_promocion' => 'required|in:2x1,10%descuento,50%descuento',
-            'productos' => 'required|array|min:1',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date|after:fecha_inicio'
-        ]);
-
         try {
-            // Calcular nuevo precio
+            $promocion = promociones::find($id);
+            
+            if (!$promocion) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Promoción no encontrada'
+                ], 404);
+            }
+            
+            // Diferentes reglas de validación para fechas dependiendo si es edición
+            $fechaInicioRule = 'required|date';
+            // Solo validar fecha futura si es una nueva fecha de inicio
+            if ($request->fecha_inicio != $promocion->fecha_inicio->format('Y-m-d')) {
+                $fechaInicioRule = 'required|date|after_or_equal:today';
+            }
+            
+            $request->validate([
+                'nombre_promocion' => 'required|string|max:150|unique:promociones,nombre_promocion,' . $id . ',id_promocion',
+                'tipo_promocion' => 'required|in:2x1,10%descuento,50%descuento',
+                'productos' => 'required|array|min:1',
+                'productos.*' => 'exists:productos,id_producto',
+                'fecha_inicio' => $fechaInicioRule,
+                'fecha_fin' => 'required|date|after:fecha_inicio',
+                'stock_promocion' => 'required|integer|min:1|max:999'
+            ], [
+                'nombre_promocion.required' => 'El nombre de la promoción es obligatorio',
+                'nombre_promocion.unique' => 'Ya existe una promoción con este nombre',
+                'tipo_promocion.required' => 'Debe seleccionar un tipo de promoción',
+                'productos.required' => 'Debe seleccionar al menos un producto',
+                'productos.min' => 'Debe seleccionar al menos un producto',
+                'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy',
+                'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
+                'stock_promocion.required' => 'El stock de promoción es obligatorio',
+                'stock_promocion.min' => 'El stock debe ser mínimo 1',
+                'stock_promocion.max' => 'El stock no puede ser mayor a 999'
+            ]);
+
+            // Validar stock
             $productosIds = $request->input('productos');
             $productos = productos::whereIn('id_producto', $productosIds)->get();
+            
+            if ($productos->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontraron productos válidos'
+                ], 422);
+            }
+            
+            $stockMinimo = $productos->min('stock');
+            
+            if ($request->stock_promocion > $stockMinimo) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "El stock de promoción no puede ser mayor al stock mínimo de los productos seleccionados ({$stockMinimo})"
+                ], 422);
+            }
+
+            // Calcular nuevo precio
             $precioTotal = $productos->sum('precio_unitario');
             
             switch ($request->tipo_promocion) {
                 case '2x1':
                     $precioPromocion = $precioTotal / 2;
+                    $descripcion = '2x1 - Paga 1 y lleva 2';
                     break;
                 case '10%descuento':
                     $precioPromocion = $precioTotal * 0.9;
+                    $descripcion = '10% de descuento';
                     break;
                 case '50%descuento':
                     $precioPromocion = $precioTotal * 0.5;
+                    $descripcion = '50% de descuento';
                     break;
                 default:
                     $precioPromocion = $precioTotal;
+                    $descripcion = $request->tipo_promocion;
             }
 
             $promocion->update([
                 'nombre_promocion' => $request->nombre_promocion,
-                'descripcion_promocion' => $request->tipo_promocion,
-                'precio_promocion' => $precioPromocion,
+                'descripcion_promocion' => $descripcion,
+                'precio_promocion' => round($precioPromocion, 2),
                 'fecha_inicio' => $request->fecha_inicio,
-                'fecha_fin' => $request->fecha_fin
+                'fecha_fin' => $request->fecha_fin,
+                'stock_promocion' => $request->stock_promocion,
+                'fecha_actualizacion' => now()
             ]);
 
             // Actualizar productos de la promoción
@@ -618,19 +743,39 @@ class controller_admin extends Controller
             
             foreach ($productosIds as $productoId) {
                 $producto = productos::find($productoId);
-                promocion_productos::create([
-                    'id_promocion' => $promocion->id_promocion,
-                    'id_producto' => $productoId,
-                    'cantidad_producto_en_promo' => 1,
-                    'precio_original_referencia' => $producto->precio_unitario
-                ]);
+                if ($producto) {
+                    promocion_productos::create([
+                        'id_promocion' => $promocion->id_promocion,
+                        'id_producto' => $productoId,
+                        'cantidad_producto_en_promo' => 1,
+                        'precio_original_referencia' => $producto->precio_unitario
+                    ]);
+                }
             }
 
-            return redirect()->route('vista.admin_promociones')
-                ->with('success', 'Promoción actualizada exitosamente');
+            return response()->json([
+                'success' => true,
+                'message' => 'Promoción actualizada correctamente'
+            ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            return back()->with('error', 'Error al actualizar promoción: ' . $e->getMessage());
+            Log::error('Error al actualizar promoción', [
+                'promocion_id' => $id,
+                'request' => $request->all(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -652,11 +797,40 @@ class controller_admin extends Controller
         try {
             $promocion = promociones::findOrFail($id);
             $nuevoEstado = $promocion->estado_promocion === 'activa' ? 'inactiva' : 'activa';
-            $promocion->update(['estado_promocion' => $nuevoEstado]);
+            
+            $promocion->update([
+                'estado_promocion' => $nuevoEstado,
+                'fecha_actualizacion' => now()
+            ]);
             
             return response()->json(['success' => true, 'estado' => $nuevoEstado]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function obtener_productos_promocion()
+    {
+        try {
+            $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
+            $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
+                $query->whereIn('nombre', $categoriasMesero);
+            })->where('estado', 1)->with('categoria')->get();
+            
+            return response()->json([
+                'success' => true,
+                'productos' => $productos
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener productos para promociones', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener productos: ' . $e->getMessage()
+            ], 500);
         }
     }
 
