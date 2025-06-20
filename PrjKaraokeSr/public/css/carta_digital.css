@@ -1,0 +1,219 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+:root {
+    --color-cream: #fffbe8;
+    --color-red-light: #d05e4a;
+    --color-red-dark: #c4361d;
+    --color-text: #333;
+    --color-card-bg: rgba(255, 251, 232, 0.9);
+    --color-card-border: rgba(208, 94, 74, 0.2);
+    --color-text-secondary: #666;
+    --color-header-bg: #fffbe8;
+    --color-footer-bg: #c4361d;
+    --color-footer-text: #fffbe8;
+}
+
+html.dark {
+    --color-cream: #1a1a1a;
+    --color-red-light: #d05e4a;
+    --color-red-dark: #c4361d;
+    --color-text: #f0f0f0;
+    --color-card-bg: rgba(40, 40, 40, 0.9);
+    --color-card-border: rgba(208, 94, 74, 0.4);
+    --color-text-secondary: #cccccc;
+    --color-header-bg: #222222;
+    --color-footer-bg: #111111;
+    --color-footer-text: #d05e4a;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--color-cream);
+    color: var(--color-text);
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.menu-section {
+    display: none;
+}
+
+.menu-section.active {
+    display: block;
+    animation: fadeIn 0.5s ease;
+}
+
+/* Estilos para la sección de promociones */
+#promociones {
+    background: linear-gradient(135deg, rgba(255, 251, 232, 0.5), rgba(208, 94, 74, 0.1));
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--color-red-light);
+}
+
+html.dark #promociones {
+    background: linear-gradient(135deg, rgba(40, 40, 40, 0.8), rgba(196, 54, 29, 0.3));
+    border-color: var(--color-red-dark);
+}
+
+.promo-card {
+    background: var(--color-card-bg);
+    transition: all 0.3s ease;
+    border: 2px solid var(--color-red-dark);
+    box-shadow: 0 8px 25px rgba(196, 54, 29, 0.2);
+}
+
+.promo-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(196, 54, 29, 0.3);
+}
+
+.category-btn.active {
+    background-color: var(--color-red-dark);
+    border-color: var(--color-red-dark);
+    color: var(--color-cream);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(196, 54, 29, 0.3);
+}
+
+.product-card {
+    background: var(--color-card-bg);
+    transition: all 0.3s ease;
+    border: 1px solid var(--color-card-border);
+    position: relative;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(196, 54, 29, 0.2);
+    border-color: var(--color-red-light);
+}
+
+.product-card.out-of-stock {
+    opacity: 0.6;
+    filter: grayscale(50%);
+}
+
+.product-image {
+    height: 140px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 0.5rem 0.5rem 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-image::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+}
+
+.price-tag {
+    background: var(--color-red-dark);
+    clip-path: polygon(0 0, 100% 0, 100% 70%, 85% 100%, 0 100%);
+    display: inline-block;
+}
+
+.promo-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #c4361d;
+    color: #fffbe8;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transform: rotate(5deg);
+}
+
+.original-price {
+    text-decoration: line-through;
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-right: 5px;
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.header-title {
+    font-family: 'Playfair Display', serif;
+    text-shadow: 0 2px 10px rgba(196, 54, 29, 0.5);
+}
+
+.category-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.category-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dragon-logo {
+    filter: drop-shadow(0 2px 4px rgba(196, 54, 29, 0.5));
+}
+
+.section-title {
+    position: relative;
+    overflow: hidden;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, var(--color-red-dark), var(--color-red-light), transparent);
+}
+
+.theme-toggle {
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    background-color: rgba(208, 94, 74, 0.2);
+}
+
+.theme-toggle i {
+    font-size: 1.2rem;
+}
+
+.text-secondary {
+    color: var(--color-text-secondary);
+}

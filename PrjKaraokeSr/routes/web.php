@@ -16,6 +16,8 @@ use App\Http\Controllers\Auth\controller_login;
 // Import the DNI and RUC controller
 use App\Http\Controllers\Api\controller_api;
 
+use App\Http\Controllers\CartaDigitalController;
+
 Route::get('/', function () {
     return view('auth.login');
 });
@@ -117,3 +119,7 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
 Route::get('/login', [controller_login::class, 'showLoginForm'])->name('login');
 Route::post('/verificarlogin', [controller_login::class, 'login'])->name('verificar.login');
 Route::post('/logout', [controller_login::class, 'logout'])->name('logout');
+
+//Ruta de la carta
+Route::get('/carta', [CartaDigitalController::class, 'index']);
+
