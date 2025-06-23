@@ -1,7 +1,18 @@
 @extends('view_layout.app')
 
 @section('content')
-<x-app-header backUrl="{{ route('vista.user_menu') }}" title="Historial de Pedidos" />
+<link href="{{ asset('css/admin_historial.css') }}" rel="stylesheet">
+<!-- Header personalizado -->
+<div class="custom-header">
+    <a href="{{ route('vista.user_menu') }}" class="back-button">
+        <img src="{{ asset('images/izquierda.png') }}" alt="Regresar">
+    </a>
+    <div class="header-title">
+        <h1>Historial de Compras</h1>
+    </div>
+</div>
+
+
 
 <div class="container mt-4 mb-5 pb-5">
     <!-- Filtros de fecha -->

@@ -1,0 +1,30 @@
+.custom-header {
+    background: #2d1a12;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 2px solid #ff6b6b;
+    height: 80px;
+}
+
+.back-button {
+    position: absolute;
+    left: 20px;
+}
+
+.back-button img {
+    width: 40px;
+    height: 40px;
+}
+
+.header-title {
+    flex: 1;
+    text-align: center;
+}
+
+.header-title h1 {
+    color: white;
+    font-size: 1.2em;
+    margin: 0;
+}

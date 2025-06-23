@@ -3,8 +3,16 @@
 @section('content')
 <div class="body-overlay"></div>
 
-<!-- Header con botón de retroceso -->
-<x-app-header backUrl="{{ route('vista.user_menu') }}" />
+<link href="{{ asset('css/admin_generarList_compras.css') }}" rel="stylesheet">
+<!-- Header personalizado -->
+<div class="custom-header">
+    <a href="{{ route('vista.user_menu') }}" class="back-button">
+        <img src="{{ asset('images/izquierda.png') }}" alt="Regresar">
+    </a>
+    <div class="header-title">
+        <h1>Historial de Compras</h1>
+    </div>
+</div>
 
 <div class="admin-container">
     <div class="lista-compras-wrapper">

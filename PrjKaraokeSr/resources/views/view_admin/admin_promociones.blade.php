@@ -1,7 +1,17 @@
 @extends('view_layout.app')
 
 @section('content')
-<x-app-header backUrl="{{ route('vista.user_menu') }}" title="Gestión de Promociones" />
+<link href="{{ asset('css/admin_promociones.css') }}" rel="stylesheet">
+
+<!-- Header personalizado -->
+<div class="custom-header">
+    <a href="{{ route('vista.user_menu') }}" class="back-button">
+        <img src="{{ asset('images/izquierda.png') }}" alt="Regresar">
+    </a>
+    <div class="header-title">
+        <h1>Gestionar Promociones</h1>
+    </div>
+</div>
 
 <div class="container mt-4 mb-5 pb-5">
     @if(session('success'))
