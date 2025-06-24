@@ -37,8 +37,19 @@ class CartaDigitalController extends Controller
                 ->orderBy('nombre')
                 ->get();
             
-            if ($productos->isNotEmpty()) {
-                $productosPorCategoria[$categoria->nombre] = $productos;
+            // NUEVA LÓGICA: Filtrar productos según la categoría
+            if ($categoria->nombre === 'Cocteles') {
+                // Para cocteles: solo verificar que estén activos (estado = 1)
+                $productosDisponibles = $productos; // Ya filtrados por estado = 1 arriba
+            } else {
+                // Para otros productos: verificar estado Y stock
+                $productosDisponibles = $productos->filter(function($producto) {
+                    return $producto->stock > 0;
+                });
+            }
+            
+            if ($productosDisponibles->isNotEmpty()) {
+                $productosPorCategoria[$categoria->nombre] = $productosDisponibles;
             }
         }
 
@@ -63,7 +74,22 @@ class CartaDigitalController extends Controller
                     $todosConStock = false;
                     break;
                 }
-                $stockMinimo = min($stockMinimo, $promoProducto->producto->stock);
+                
+                // NUEVA LÓGICA: Aplicar diferenciación para cocteles en promociones
+                if (isset($promoProducto->producto->categoria) && $promoProducto->producto->categoria->nombre === 'Cocteles') {
+                    // Para cocteles: solo verificar estado
+                    if ($promoProducto->producto->estado != 1) {
+                        $todosConStock = false;
+                        break;
+                    }
+                } else {
+                    // Para otros productos: verificar stock
+                    $stockMinimo = min($stockMinimo, $promoProducto->producto->stock);
+                    if ($promoProducto->producto->stock <= 0) {
+                        $todosConStock = false;
+                        break;
+                    }
+                }
             }
             
             if (!$todosConStock || $promocion->productos->isEmpty()) {

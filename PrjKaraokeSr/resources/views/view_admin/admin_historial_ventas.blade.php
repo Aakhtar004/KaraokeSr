@@ -53,14 +53,60 @@
             $pedidosAgrupados = $pedidos->groupBy(function($pedido) {
                 return $pedido->fecha_hora_pedido->format('Y-m-d');
             });
+            
+            // NUEVO: Calcular estadísticas generales
+            $totalPedidos = $pedidos->count();
+            $totalVentas = $pedidos->sum('total_pedido');
+            $pedidosConComprobante = $pedidos->whereNotNull('comprobante')->count();
+            $pedidosInconclusos = $totalPedidos - $pedidosConComprobante;
         @endphp
+        
+        <!-- NUEVO: Estadísticas resumidas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center bg-primary text-white">
+                    <div class="card-body">
+                        <h3>{{ $totalPedidos }}</h3>
+                        <small>Total Pedidos</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-success text-white">
+                    <div class="card-body">
+                        <h3>{{ $pedidosConComprobante }}</h3>
+                        <small>Facturados</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-warning text-white">
+                    <div class="card-body">
+                        <h3>{{ $pedidosInconclusos }}</h3>
+                        <small>Inconclusos</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-info text-white">
+                    <div class="card-body">
+                        <h3>S/ {{ number_format($totalVentas, 2) }}</h3>
+                        <small>Total Ventas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         @foreach($pedidosAgrupados as $fecha => $pedidosDia)
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="mb-0">{{ \Carbon\Carbon::parse($fecha)->format('l, d/m/Y') }}</h6>
-                        <small class="text-muted">{{ $pedidosDia->count() }} pedido(s)</small>
+                        <small class="text-muted">
+                            {{ $pedidosDia->count() }} pedido(s) | 
+                            {{ $pedidosDia->whereNotNull('comprobante')->count() }} facturados | 
+                            {{ $pedidosDia->whereNull('comprobante')->count() }} inconclusos
+                        </small>
                     </div>
                     <a href="{{ route('admin.detalle_pedido', $fecha) }}" class="btn btn-primary btn-sm">Ver Detalle</a>
                 </div>
@@ -68,10 +114,17 @@
                     <div class="row">
                         @foreach($pedidosDia->take(3) as $pedido)
                             <div class="col-md-4 mb-2">
-                                <div class="border rounded p-2">
+                                <div class="border rounded p-2 position-relative">
                                     <small><strong>Mesa {{ $pedido->mesa->numero_mesa }}</strong></small><br>
                                     <small>S/ {{ number_format($pedido->total_pedido, 2) }}</small><br>
                                     <small class="text-muted">{{ $pedido->fecha_hora_pedido->format('H:i') }}</small>
+                                    
+                                    <!-- NUEVO: Estado del comprobante -->
+                                    @if($pedido->comprobante)
+                                        <span class="badge bg-success position-absolute top-0 end-0 m-1">FACTURADO</span>
+                                    @else
+                                        <span class="badge bg-warning position-absolute top-0 end-0 m-1">INCONCLUSO</span>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach

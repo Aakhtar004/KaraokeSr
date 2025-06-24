@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // ✨ VALIDACIÓN EN TIEMPO REAL DEL DNI (IGUAL QUE EN FACTURACIÓN)
+        // VALIDACIÓN EN TIEMPO REAL DEL DNI (IGUAL QUE EN FACTURACIÓN)
         dniInput.addEventListener('input', function() {
             // Solo permitir números y máximo 8 caracteres
             this.value = this.value.replace(/[^0-9]/g, '').substring(0, 8);
@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // ✨ PERMITIR CONSULTA CON ENTER
+        // PERMITIR CONSULTA CON ENTER
         dniInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();

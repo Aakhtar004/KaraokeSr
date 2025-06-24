@@ -37,17 +37,79 @@ class controller_admin extends Controller
 
     public function actualizarProducto(Request $request, productos $producto)
     {
-        $rules = ['precio_unitario' => 'required|numeric|min:0'];
-        if ($producto->categoria->nombre === 'Cocteles') {
-            $request->merge(['estado' => $request->has('estado')]);
-            $rules['estado'] = 'boolean';
-        } else {
-            $rules['stock'] = 'required|integer|min:0';
-        }
-        $data = $request->validate($rules);
+        try {
+            // Validaciones básicas
+            $rules = [
+                'precio_unitario' => 'required|numeric|min:0',
+                'estado' => 'boolean'
+            ];
+            
+            // MODIFICADO: Para cocteles, no validar stock
+            if ($producto->categoria->nombre !== 'Cocteles') {
+                $rules['stock'] = 'required|integer|min:0';
+            }
+            
+            // Procesar el checkbox de estado
+            $request->merge(['estado' => $request->has('estado') ? 1 : 0]);
+            
+            $data = $request->validate($rules);
+            
+            // Para cocteles, asegurar que el stock sea 0
+            if ($producto->categoria->nombre === 'Cocteles') {
+                $data['stock'] = 0;
+            }
 
-        $producto->update($data);
-        return back()->with('success', "«{$producto->nombre}» actualizado");
+            $producto->update($data);
+            
+            return back()->with('success', "«{$producto->nombre}» actualizado correctamente");
+            
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar producto:', [
+                'producto_id' => $producto->id_producto,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Error al actualizar el producto: ' . $e->getMessage());
+        }
+    }
+
+    // NUEVO MÉTODO: Eliminar producto
+    public function eliminarProducto(productos $producto)
+    {
+        try {
+            // Verificar si el producto tiene pedidos asociados
+            $tienePedidos = pedido_detalles::where('id_producto', $producto->id_producto)->exists();
+            
+            if ($tienePedidos) {
+                return back()->with('error', 
+                    "No se puede eliminar «{$producto->nombre}» porque tiene pedidos asociados. " .
+                    "Puede desactivarlo cambiando su estado a inactivo."
+                );
+            }
+            
+            // Verificar si el producto está en promociones
+            $tienePromociones = promocion_productos::where('id_producto', $producto->id_producto)->exists();
+            
+            if ($tienePromociones) {
+                return back()->with('error', 
+                    "No se puede eliminar «{$producto->nombre}» porque está asociado a promociones. " .
+                    "Elimine primero las promociones relacionadas."
+                );
+            }
+            
+            $nombreProducto = $producto->nombre;
+            $producto->delete();
+            
+            return back()->with('success', "Producto «{$nombreProducto}» eliminado correctamente");
+            
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar producto:', [
+                'producto_id' => $producto->id_producto,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Error al eliminar el producto: ' . $e->getMessage());
+        }
     }
 
     // VER HISTORIAL DE PEDIDOS
@@ -92,12 +154,40 @@ class controller_admin extends Controller
 
     public function ver_detalle_pedido($fecha)
     {
-        $pedidos = pedidos::with(['mesa', 'detalles.producto', 'comprobante'])
+        // MODIFICADO: Incluir relación con mesero
+        $pedidos = pedidos::with(['mesa', 'detalles.producto', 'comprobante', 'mesero'])
             ->whereDate('fecha_hora_pedido', $fecha)
             ->orderBy('fecha_hora_pedido', 'desc')
             ->get();
         
         return view('view_admin.admin_detalle_pedido', compact('pedidos', 'fecha'));
+    }
+
+    // NUEVO MÉTODO: Ver comprobante desde admin
+    public function ver_comprobante_admin($idComprobante)
+    {
+        try {
+            $comprobante = comprobantes::with([
+                'pedido.detalles.producto', 
+                'pedido.mesa', 
+                'pedido.mesero'
+            ])->findOrFail($idComprobante);
+            
+            return view('view_admin.admin_pedido_facturacion', compact('comprobante'));
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('vista.admin_historial_ventas')
+                ->with('error', 'Comprobante no encontrado.');
+        } catch (\Exception $e) {
+            Log::error('Error al ver comprobante desde admin', [
+                'comprobante_id' => $idComprobante,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('vista.admin_historial_ventas')
+                ->with('error', 'Error al cargar el comprobante.');
+        }
     }
 
     // VER LISTA DE COMPRAS PENDIENTES

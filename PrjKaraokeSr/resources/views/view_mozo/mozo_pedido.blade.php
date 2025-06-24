@@ -37,6 +37,9 @@
                 <h2 class="accordion-header" id="heading{{ $categoria->id_categoria_producto }}">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $categoria->id_categoria_producto }}" aria-expanded="false" aria-controls="collapse{{ $categoria->id_categoria_producto }}">
                         {{ $categoria->nombre }}
+                        @if($categoria->nombre === 'Cocteles')
+                            <span class="badge bg-info ms-2">Preparado al momento</span>
+                        @endif
                     </button>
                 </h2>
                 <div id="collapse{{ $categoria->id_categoria_producto }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $categoria->id_categoria_producto }}" data-bs-parent="#accordionCategorias">
@@ -51,16 +54,28 @@
                                 @foreach($productosCategoria as $producto)
                                     @php
                                         $cantidadYaPedida = isset($productosYaPedidos) ? ($productosYaPedidos[$producto->id_producto] ?? 0) : 0;
-                                        $stockDisponible = $producto->stock + $cantidadYaPedida;
+                                        
+                                        // NUEVA LÓGICA: Diferente manejo para cocteles
+                                        if($categoria->nombre === 'Cocteles') {
+                                            // Para cocteles: disponibilidad basada en estado, no en stock
+                                            $disponible = $producto->estado == 1;
+                                            $stockDisponible = $disponible ? 999 : 0; // Valor alto para cocteles disponibles
+                                            $mostrarStock = false;
+                                        } else {
+                                            // Para otros productos: lógica original basada en stock
+                                            $stockDisponible = $producto->stock + $cantidadYaPedida;
+                                            $disponible = $stockDisponible > 0 && $producto->estado == 1;
+                                            $mostrarStock = true;
+                                        }
                                     @endphp
                                     <div class="col-md-6 mb-4">
-                                        <div class="card h-100 position-relative product-card" data-stock="{{ $stockDisponible }}">
+                                        <div class="card h-100 position-relative product-card" data-stock="{{ $stockDisponible }}" data-es-coctel="{{ $categoria->nombre === 'Cocteles' ? 'true' : 'false' }}">
                                             <!-- Checkbox en la esquina superior derecha -->
                                             <input type="checkbox" 
                                                    name="productos[{{ $producto->id_producto }}][seleccionado]" 
                                                    value="1" 
                                                    class="form-check-input position-absolute top-0 end-0 m-2 producto-checkbox" 
-                                                   {{ $stockDisponible == 0 ? 'disabled' : '' }}
+                                                   {{ !$disponible ? 'disabled' : '' }}
                                                    {{ $cantidadYaPedida > 0 ? 'checked' : '' }}>
                                             <div class="card-body d-flex flex-column align-items-center">
                                                 @if($producto->imagen_url)
@@ -68,19 +83,36 @@
                                                 @endif
                                                 <h5 class="card-title text-center">{{ $producto->nombre }}</h5>
                                                 <p class="card-text text-center text-muted">{{ $producto->descripcion ?? '' }}</p>
-                                                @if($stockDisponible == 0)
-                                                    <div class="alert alert-danger p-1 text-center mb-2">Producto faltante</div>
+                                                
+                                                <!-- Estado del producto -->
+                                                @if(!$disponible)
+                                                    @if($categoria->nombre === 'Cocteles')
+                                                        <div class="alert alert-warning p-1 text-center mb-2">Coctel no disponible</div>
+                                                    @else
+                                                        <div class="alert alert-danger p-1 text-center mb-2">Producto faltante</div>
+                                                    @endif
                                                 @endif
+                                                
                                                 @if($cantidadYaPedida > 0)
                                                     <div class="alert alert-warning p-1 text-center mb-2">Ya pedido: {{ $cantidadYaPedida }}</div>
                                                 @endif
+                                                
                                                 <div class="d-flex align-items-center justify-content-center">
-                                                    <button type="button" class="btn btn-link btn-restar" data-id="{{ $producto->id_producto }}" {{ $stockDisponible == 0 ? 'disabled' : '' }}>-</button>
+                                                    <button type="button" class="btn btn-link btn-restar" data-id="{{ $producto->id_producto }}" {{ !$disponible ? 'disabled' : '' }}>-</button>
                                                     <input type="text" readonly name="productos[{{ $producto->id_producto }}][cantidad]" id="cantidad-{{ $producto->id_producto }}" value="{{ $cantidadYaPedida > 0 ? $cantidadYaPedida : 1 }}" class="text-center border-0 bg-transparent fw-bold">
-                                                    <button type="button" class="btn btn-link btn-sumar" data-id="{{ $producto->id_producto }}" {{ $stockDisponible == 0 ? 'disabled' : '' }}>+</button>
+                                                    <button type="button" class="btn btn-link btn-sumar" data-id="{{ $producto->id_producto }}" {{ !$disponible ? 'disabled' : '' }}>+</button>
                                                 </div>
+                                                
+                                                <!-- Información de disponibilidad -->
                                                 <div class="stock-info">
-                                                    <strong>Stock:</strong> {{ $stockDisponible }} {{ $producto->unidad_medida }}
+                                                    @if($categoria->nombre === 'Cocteles')
+                                                        <strong>Estado:</strong> 
+                                                        <span class="badge {{ $disponible ? 'bg-success' : 'bg-danger' }}">
+                                                            {{ $disponible ? 'Disponible' : 'No Disponible' }}
+                                                        </span>
+                                                    @else
+                                                        <strong>Stock:</strong> {{ $stockDisponible }} {{ $producto->unidad_medida }}
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -183,9 +215,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // NO pre-seleccionar productos cuando se está editando
-    // Los productos deben empezar sin seleccionar, independientemente del contexto
-    
     // Inicializar contador
     actualizarContador();
 
@@ -207,17 +236,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Botones de sumar cantidad
+    // Botones de sumar cantidad - MODIFICADO para cocteles
     document.querySelectorAll('.btn-sumar').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const id = this.dataset.id;
             const input = document.getElementById('cantidad-' + id);
-            // Obtener el stock desde el div contenedor de la card
             const card = this.closest('.card');
             const maxStock = parseInt(card.dataset.stock);
+            const esCoctel = card.dataset.esCoctel === 'true';
             const currentValue = parseInt(input.value);
-            if (currentValue < maxStock) {
+            
+            // Para cocteles, permitir hasta 10 (límite razonable)
+            // Para otros productos, respetar el stock
+            const limite = esCoctel ? 10 : maxStock;
+            
+            if (currentValue < limite) {
                 input.value = currentValue + 1;
             }
         });
@@ -233,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     cb.checked = false;
                 });
                 // Resetear todas las cantidades a 1
-                document.querySelectorAll('input[type="number"]').forEach(input => {
+                document.querySelectorAll('input[name*="cantidad"]').forEach(input => {
                     input.value = 1;
                 });
                 // Limpiar barra de búsqueda

@@ -80,12 +80,24 @@ class controller_mesero extends Controller
             ->where('estado', 1)
             ->get();
         
-        // Obtener productos que pertenecen a estas categorías específicas
-        $productos = productos::whereIn('id_categoria_producto', 
-            $categorias_producto->pluck('id_categoria_producto'))
-            ->where('estado', 1)
-            ->get();
-
+        // MODIFICADO: Obtener productos con lógica diferenciada para cocteles
+        $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
+            $query->whereIn('nombre', $categoriasMesero);
+        })
+        ->with('categoria')
+        ->get();
+        
+        // Filtrar productos según su categoría
+        $productos = $productos->filter(function($producto) {
+            if ($producto->categoria->nombre === 'Cocteles') {
+                // Para cocteles: solo mostrar si están activos (estado = 1)
+                return $producto->estado == 1;
+            } else {
+                // Para otros productos: mostrar si están activos Y tienen stock
+                return $producto->estado == 1 && $producto->stock > 0;
+            }
+        });
+        
         return view('view_mozo.mozo_pedido', compact('mesa', 'categorias_producto', 'productos'));
     }
 
@@ -118,20 +130,26 @@ class controller_mesero extends Controller
         // Obtener información detallada de cada producto seleccionado
         foreach ($productos as $idProducto => $datos) {
             if (isset($datos['seleccionado']) && $datos['seleccionado'] == 1) {
-                $producto = productos::find($idProducto);
+                $producto = productos::with('categoria')->find($idProducto);
                 
                 if ($producto) {
                     $cantidad = (int)($datos['cantidad'] ?? 1);
                     
                     if ($editandoPedido) {
-                        // Al agregar a un pedido existente, solo procesamos los productos nuevos
-                        // Sin considerar cantidades previas ya que empezamos desde 0
                         $subtotal = $producto->precio_unitario * $cantidad;
                         $totalPedido += $subtotal;
                         
-                        // Validar stock disponible
-                        if ($producto->stock < $cantidad) {
-                            return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
+                        // NUEVA LÓGICA: Validación diferenciada para cocteles
+                        if ($producto->categoria->nombre === 'Cocteles') {
+                            // Para cocteles: solo validar que esté activo
+                            if ($producto->estado != 1) {
+                                return back()->with('error', "El coctel {$producto->nombre} no está disponible actualmente.");
+                            }
+                        } else {
+                            // Para otros productos: validar stock
+                            if ($producto->stock < $cantidad) {
+                                return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
+                            }
                         }
                         
                         $pedidosTemp[] = [
@@ -147,9 +165,17 @@ class controller_mesero extends Controller
                         $subtotal = $producto->precio_unitario * $cantidad;
                         $totalPedido += $subtotal;
                         
-                        // Validar stock disponible
-                        if ($producto->stock < $cantidad) {
-                            return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
+                        // NUEVA LÓGICA: Validación diferenciada para cocteles
+                        if ($producto->categoria->nombre === 'Cocteles') {
+                            // Para cocteles: solo validar que esté activo
+                            if ($producto->estado != 1) {
+                                return back()->with('error', "El coctel {$producto->nombre} no está disponible actualmente.");
+                            }
+                        } else {
+                            // Para otros productos: validar stock
+                            if ($producto->stock < $cantidad) {
+                                return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
+                            }
                         }
                         
                         $pedidosTemp[] = [
@@ -202,39 +228,45 @@ class controller_mesero extends Controller
                 $pedido = pedidos::findOrFail($agregandoAPedido);
                 
                 foreach ($pedidosTemp as $item) {
-                    $producto = productos::find($item['id_producto']);
+                    $producto = productos::with('categoria')->find($item['id_producto']);
                     
-                    if ($producto->stock < $item['cantidad']) {
-                        throw new \Exception("Stock insuficiente para {$producto->nombre}");
+                    if (!$producto) {
+                        throw new \Exception("Producto no encontrado: {$item['nombre']}");
                     }
 
                     $idPreparador = $this->asignarPreparador($producto->area_destino);
+                    
+                    // NUEVA LÓGICA: Manejo diferenciado de stock para cocteles
+                    if ($producto->categoria->nombre !== 'Cocteles') {
+                        // Solo decrementar stock para productos que NO son cocteles
+                        if ($producto->stock < $item['cantidad']) {
+                            throw new \Exception("Stock insuficiente para {$producto->nombre}");
+                        }
+                        $producto->decrement('stock', $item['cantidad']);
+                    }
+                    // Para cocteles: no se decrementa stock, solo se valida estado
 
-                    // CAMBIO PRINCIPAL: Siempre crear NUEVOS detalles para productos agregados en edición
-                    // No verificar si ya existe el producto, crear siempre un nuevo registro
-                    // Esto asegura que aparezcan como pedidos nuevos en cocina/barra
+                    // Crear nuevo detalle
                     pedido_detalles::create([
                         'id_pedido' => $pedido->id_pedido,
                         'id_producto' => $item['id_producto'],
                         'cantidad' => $item['cantidad'],
                         'precio_unitario_momento' => $item['precio'],
                         'subtotal' => $item['subtotal'],
-                        'estado_item' => 'SOLICITADO', // Estado inicial para que aparezca en historial
+                        'estado_item' => 'SOLICITADO',
                         'id_usuario_preparador' => $idPreparador,
                         'fecha_creacion' => now()
                     ]);
-
-                    $producto->decrement('stock', $item['cantidad']);
                 }
 
                 // Actualizar total del pedido
                 $nuevoTotal = $pedido->detalles()->sum('subtotal');
                 $pedido->update(['total_pedido' => $nuevoTotal]);
 
-                // Limpiar sesión
                 session()->forget(['pedidos_temp', 'mesa_temp', 'total_temp', 'editando_pedido', 'productos_ya_pedidos', 'agregando_a_pedido']);
-
+                
                 return redirect()->route('vista.mozo_historial')->with('success', 'Productos agregados al pedido exitosamente.');
+                
             } else {
                 // Crear nuevo pedido
                 $pedido = pedidos::create([
@@ -247,11 +279,21 @@ class controller_mesero extends Controller
                 ]);
 
                 foreach ($pedidosTemp as $item) {
-                    $producto = productos::find($item['id_producto']);
+                    $producto = productos::with('categoria')->find($item['id_producto']);
                     
-                    if ($producto->stock < $item['cantidad']) {
-                        throw new \Exception("Stock insuficiente para {$producto->nombre}");
+                    if (!$producto) {
+                        throw new \Exception("Producto no encontrado: {$item['nombre']}");
                     }
+
+                    // NUEVA LÓGICA: Manejo diferenciado de stock para cocteles
+                    if ($producto->categoria->nombre !== 'Cocteles') {
+                        // Solo decrementar stock para productos que NO son cocteles
+                        if ($producto->stock < $item['cantidad']) {
+                            throw new \Exception("Stock insuficiente para {$producto->nombre}");
+                        }
+                        $producto->decrement('stock', $item['cantidad']);
+                    }
+                    // Para cocteles: no se decrementa stock
 
                     $idPreparador = $this->asignarPreparador($producto->area_destino);
 
@@ -265,22 +307,21 @@ class controller_mesero extends Controller
                         'id_usuario_preparador' => $idPreparador,
                         'fecha_creacion' => now()
                     ]);
-
-                    $producto->decrement('stock', $item['cantidad']);
                 }
 
-                // Marcar la mesa como ocupada (valor ENUM: 'ocupada')
+                // Marcar la mesa como ocupada
                 $mesa = mesas::find($idMesa);
                 if ($mesa) {
                     $mesa->update(['estado' => 'ocupada']);
                 }
 
                 session()->forget(['pedidos_temp', 'mesa_temp', 'total_temp']);
-
-                return redirect()->route('vista.mozo_mesa')->with('success', 'Pedido registrado exitosamente.');
+                
+                return redirect()->route('vista.mozo_historial')->with('success', 'Pedido creado exitosamente.');
             }
-
+            
         } catch (\Exception $e) {
+            Log::error('Error al confirmar pedido:', ['error' => $e->getMessage()]);
             return back()->with('error', 'Error al procesar el pedido: ' . $e->getMessage());
         }
     }
@@ -430,6 +471,7 @@ class controller_mesero extends Controller
         }
     }
 
+    // MODIFICADO: También aplicar lógica diferenciada en agregar productos
     public function agregar_productos_pedido($idPedido)
     {
         $pedido = pedidos::with('mesa')->findOrFail($idPedido);
@@ -442,23 +484,34 @@ class controller_mesero extends Controller
             ->where('estado', 1)
             ->get();
         
-        // Obtener productos que pertenecen a estas categorías específicas
-        $productos = productos::whereIn('id_categoria_producto', 
-            $categorias_producto->pluck('id_categoria_producto'))
-            ->where('estado', 1)
-            ->get();
+        // Obtener productos con lógica diferenciada
+        $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
+            $query->whereIn('nombre', $categoriasMesero);
+        })
+        ->with('categoria')
+        ->get();
+        
+        // Filtrar productos según su categoría
+        $productos = $productos->filter(function($producto) {
+            if ($producto->categoria->nombre === 'Cocteles') {
+                // Para cocteles: solo mostrar si están activos
+                return $producto->estado == 1;
+            } else {
+                // Para otros productos: mostrar si están activos Y tienen stock
+                return $producto->estado == 1 && $producto->stock > 0;
+            }
+        });
 
         // Guardar datos del pedido en sesión para mantener el contexto
         session([
             'editando_pedido' => $idPedido,
-            // Eliminar productos_ya_pedidos para que no se pre-seleccionen
             'productos_ya_pedidos' => []
         ]);
 
         return view('view_mozo.mozo_pedido', compact('pedido', 'categorias_producto', 'productos'))
             ->with('mesa', $pedido->mesa)
             ->with('editando', true)
-            ->with('productosYaPedidos', []); // Array vacío para que no se marquen productos
+            ->with('productosYaPedidos', []);
     }
 
 
@@ -479,7 +532,7 @@ class controller_mesero extends Controller
                 }
                 
                 return back()->with('error', 
-                    "No se puede eliminar el pedido porque ya tiene productos listos para entrega: {$nombresProductos}. " .
+                    "No se puede eliminar el pedido porque ya tiene productos listos para entrega: {$nombresProductos}. ".
                     "Estos productos ya fueron preparados por cocina/bar."
                 );
             }

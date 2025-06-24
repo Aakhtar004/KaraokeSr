@@ -144,10 +144,14 @@
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 @foreach($productosPorCategoria[$categoria->nombre] as $producto)
-                    <div class="product-card rounded-lg overflow-hidden shadow-md relative {{ $producto->stock == 0 ? 'out-of-stock' : '' }}">
-                        @if($producto->stock == 0)
+                    <div class="product-card rounded-lg overflow-hidden shadow-md relative {{ ($categoria->nombre !== 'Cocteles' && $producto->stock == 0) ? 'out-of-stock' : '' }}">
+                        @if($categoria->nombre !== 'Cocteles' && $producto->stock == 0)
                             <div class="absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
                                 <span class="text-white font-bold text-lg">AGOTADO</span>
+                            </div>
+                        @elseif($categoria->nombre === 'Cocteles' && $producto->estado == 0)
+                            <div class="absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                                <span class="text-white font-bold text-lg">NO DISPONIBLE</span>
                             </div>
                         @endif
                         @if($producto->imagen_url)
@@ -159,7 +163,7 @@
                         @endif
                         <div class="p-4">
                             <div class="flex justify-between items-start">
-                                <h3 class="font-semibold text-lg text-[#c4361d] flex-grow pr-2 {{ $producto->stock == 0 ? 'opacity-50' : '' }}">{{ $producto->nombre }}</h3>
+                                <h3 class="font-semibold text-lg text-[#c4361d] flex-grow pr-2 {{ ($categoria->nombre !== 'Cocteles' && $producto->stock == 0) || ($categoria->nombre === 'Cocteles' && $producto->estado == 0) ? 'opacity-50' : '' }}">{{ $producto->nombre }}</h3>
                                 <div class="text-right flex-shrink-0">
                                     @if($producto->precio_original > $producto->precio_unitario)
                                         <span class="original-price text-gray-500 line-through text-sm">S/{{ number_format($producto->precio_original, 2) }}</span>

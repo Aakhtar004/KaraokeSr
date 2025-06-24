@@ -18,9 +18,6 @@ use App\Http\Controllers\Api\controller_api;
 
 use App\Http\Controllers\CartaDigitalController;
 
-Route::get('/', function () {
-    return view('auth.login');
-})->name('home');
 
 Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
     // Ruta para todos los usuarios
@@ -41,7 +38,8 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         Route::get('/view_admin/admin_historial_ventas', [controller_admin::class, 'ver_admin_historial_ventas'])->name('vista.admin_historial_ventas');
         Route::get('/view_admin/admin_historial_ventas/filtrar', [controller_admin::class, 'filtrar_historial_pedidos'])->name('admin.filtrar_historial');
         Route::get('/view_admin/admin_historial_ventas/detalle/{fecha}', [controller_admin::class, 'ver_detalle_pedido'])->name('admin.detalle_pedido');
-
+        // NUEVA RUTA: Ver comprobante desde admin
+        Route::get('/admin/comprobante/{id}', [controller_admin::class, 'ver_comprobante_admin'])->name('admin.ver_comprobante');
 
         Route::get('/view_admin/admin_compras', [controller_admin::class, 'ver_admin_compras'])->name('vista.admin_compras');
 
@@ -70,6 +68,8 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         Route::get('/view_admin/admin_generar_lista_compras', [controller_admin::class, 'ver_admin_generar_lista_compras'])->name('vista.admin_generar_lista_compras');
         Route::post('/admin/productos/reabastecer', [controller_admin::class, 'marcar_productos_reabastecidos'])->name('admin.productos.reabastecer');
     
+        // NUEVA RUTA: Eliminar producto
+        Route::delete('/admin/producto/{producto}/eliminar', [controller_admin::class, 'eliminarProducto'])->name('admin.producto.eliminar');
     });
     
     // Rutas para cocineros
@@ -120,11 +120,16 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
     });
 });
 
-// Rutas de autenticación
+// Rutas de autenticación (FUERA del middleware)
 Route::get('/login', [controller_login::class, 'showLoginForm'])->name('login');
 Route::post('/verificarlogin', [controller_login::class, 'login'])->name('verificar.login');
 Route::post('/logout', [controller_login::class, 'logout'])->name('logout');
 
-//Ruta de la carta
+// Ruta raíz (FUERA del middleware)
+Route::get('/', function () {
+    return redirect()->route('login');
+})->name('home');
+
+// Ruta de la carta (públicamente accesible)
 Route::get('/carta', [CartaDigitalController::class, 'index']);
 
