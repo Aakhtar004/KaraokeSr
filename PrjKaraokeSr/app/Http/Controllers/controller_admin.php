@@ -51,7 +51,7 @@ class controller_admin extends Controller
     }
 
     // VER HISTORIAL DE PEDIDOS
-    public function ver_admin_historial() 
+    public function ver_admin_historial_ventas() 
     {
         $hoy = now()->format('Y-m-d');
         $pedidos = pedidos::with(['mesa', 'detalles.producto', 'mesero', 'comprobante'])
@@ -59,7 +59,7 @@ class controller_admin extends Controller
             ->orderBy('fecha_hora_pedido', 'desc')
             ->get();
         
-        return view('view_admin.admin_historial', compact('pedidos', 'hoy'));
+        return view('view_admin.admin_historial_ventas', compact('pedidos', 'hoy'));
     }
 
     public function filtrar_historial_pedidos(Request $request)
@@ -87,7 +87,7 @@ class controller_admin extends Controller
         
         $pedidos = $query->orderBy('fecha_hora_pedido', 'desc')->get();
         
-        return view('view_admin.admin_historial', compact('pedidos', 'fecha', 'tipo', 'hoy'));
+        return view('view_admin.admin_historial_ventas', compact('pedidos', 'fecha', 'tipo', 'hoy'));
     }
 
     public function ver_detalle_pedido($fecha)
@@ -146,7 +146,7 @@ class controller_admin extends Controller
         return view('view_admin.admin_generar_lista_compras', compact('productosCocina', 'productosBar'));
     }
 
-    // ✨ NUEVO MÉTODO PARA MARCAR PRODUCTOS COMO REABASTECIDOS
+    // NUEVO MÉTODO PARA MARCAR PRODUCTOS COMO REABASTECIDOS
     public function marcar_productos_reabastecidos(Request $request)
     {
         try {

@@ -100,6 +100,7 @@ body {
 
 .card-body .d-flex {
     margin-top: 10px;
+    justify-content: center;
 }
 
 .mesa-numero {
@@ -138,11 +139,12 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    height: 38px;
 }
 
 .btn-editar:hover {
-    background: #C4361D;
-    color: #fff;
+    background: #351f1f;
+    color: #D05E4A;
 }
 
 .btn-eliminar {
@@ -173,11 +175,12 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    height: 38px;
 }
 
 .btn-finalizar:hover {
-    background: #C4361D;
-    color: #fff;
+    background: #351f1f;
+    color: #D05E4A;
 }
 
 .btn-finalizar:disabled {
@@ -193,6 +196,7 @@ body {
 }
 
 .btn-agregar:hover {
+    
     background: #C4361D;
     color: #fff;
 }
@@ -203,10 +207,39 @@ body {
 }
 
 .badge-pagado {
-    background: #28a745;
+    background: #D05E4A;
     color: #fff;
     padding: 8px 16px;
     border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+}
+
+.btn-outline-primary {
+    background: #351f1f;
+    color: #D05E4A;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    font-size: 1rem;
+    height: 38px;
+}
+
+.btn-outline-primary:hover {
+    background: #351f1f;
+    color: #D05E4A;
+}
+
+/* Hide the warning message for products that can't be deleted */
+.text-warning {
+    display: none !important;
 }
 
 @media (max-width: 700px) {

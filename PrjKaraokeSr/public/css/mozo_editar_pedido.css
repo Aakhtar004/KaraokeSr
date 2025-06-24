@@ -1,0 +1,355 @@
+body {
+    background: rgba(180,180,180,0.4);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.container {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.mozo-header {
+    position: relative;
+    width: 100vw;
+    min-height: 180px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: url('/images/fondo_barra.png') center center/cover no-repeat;
+    margin-bottom: 15px;
+    border-radius: 0 0 24px 24px;
+    overflow: hidden;
+}
+.mozo-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(24, 19, 20, 0.82);
+    z-index: 1;
+}
+.mozo-header-back {
+    position: relative;
+    z-index: 2;
+    margin-left: 40px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 6px solid #e5735c;
+    transition: background 0.2s, border 0.2s;
+}
+
+.mozo-header-back:hover {
+    background: #e5735c;
+    border-color: #d05e4a;
+}
+
+.mozo-header-back-icon {
+    font-size: 3.2rem;
+    color: #e5735c;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.mozo-header-content {
+    position: relative;
+    z-index: 2;
+    margin-left: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mozo-header-title {
+    font-size: 2.8rem;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #d05e4a;
+    font-weight: normal;
+    letter-spacing: 0.4px;
+}
+
+.mozo-header-subtitle {
+    font-size: 3.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    color: #fffbe9;
+    font-weight: 300;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+/* Estilos para las tarjetas */
+.card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 20px !important;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 15px;
+    background-color: #fff;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+}
+
+.card-header {
+    background-color: #D05E4A !important;
+    color: #fff !important;
+    padding: 15px 20px;
+    font-weight: bold;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+.card-header.bg-dark {
+    background-color: #333 !important;
+}
+
+.card-body {
+    padding: 15px;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #333;
+}
+
+/* Estilos para los productos */
+.product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.product-info {
+    flex: 1;
+}
+
+.product-name {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.product-price {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Estilos para el control numérico */
+.d-flex.align-items-center.justify-content-center {
+    background: #e6bdbd;
+    border-radius: 15px;
+    padding: 5px 10px;
+    width: 80px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.btn-link {
+    font-size: 1.4rem;
+    color: #fff;
+    text-decoration: none;
+    background-color: #e6bdbd;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.btn-restar, .btn-sumar {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+}
+
+.form-control.text-center {
+    border: none;
+    background-color: transparent;
+    font-size: 1.2rem;
+    width: 30px;
+    text-align: center;
+    padding: 0;
+    color: #fff;
+}
+
+@media (max-width: 700px) { 
+    .mozo-header { 
+        min-height: 120px; 
+        height: 150px; 
+    } 
+    .mozo-header-back { 
+        width: 50px; 
+        height: 50px; 
+        margin-left: 10px; 
+    } 
+    .mozo-header-back-icon { 
+        font-size: 2rem; 
+    } 
+    .mozo-header-content { 
+        margin-left: 15px; 
+    } 
+    .mozo-header-title { 
+        font-size: 2rem; 
+    } 
+    .mozo-header-subtitle { 
+        font-size: 1.7rem; 
+    } 
+}
+
+.form-control.text-center:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Estilos para los botones de acción */
+.btn-action {
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 5px;
+    transition: all 0.3s ease;
+}
+
+.btn-action:hover {
+    transform: scale(1.1);
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* Estilos para el selector de mesa */
+.form-select {
+    border-radius: 12px;
+    padding: 10px 15px;
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+.form-select:focus {
+    border-color: #D05E4A;
+    box-shadow: 0 0 0 0.2rem rgba(208, 94, 74, 0.25);
+}
+
+/* Estilos para los botones principales */
+.btn {
+    border-radius: 12px;
+    padding: 8px 20px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-dark {
+    background-color: #333;
+    border-color: #333;
+}
+
+.btn-dark:hover {
+    background-color: #D05E4A;
+    border-color: #D05E4A;
+}
+
+.btn-primary {
+    background-color: #D05E4A;
+    border-color: #D05E4A;
+}
+
+.btn-primary:hover {
+    background-color: #c04e3a;
+    border-color: #c04e3a;
+}
+
+/* Estilos para dispositivos móviles */
+@media (max-width: 600px) {
+    .container {
+        padding: 15px 10px;
+        margin-top: 10px;
+    }
+    
+    .card {
+        margin-bottom: 10px;
+        border-radius: 15px !important;
+    }
+    
+    .card-header {
+        padding: 12px 15px;
+        font-size: 1rem;
+    }
+    
+    .card-body {
+        padding: 12px 10px;
+    }
+    
+    .product-name {
+        font-size: 0.9rem;
+    }
+    
+    .product-price {
+        font-size: 0.8rem;
+    }
+    
+    .d-flex.align-items-center.justify-content-center {
+        width: 70px;
+        padding: 2px 3px;
+    }
+    
+    .btn-link {
+        font-size: 1.3rem;
+        width: 22px;
+        height: 22px;
+    }
+    
+    .btn-restar, .btn-sumar {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .form-control.text-center {
+        font-size: 1rem;
+        width: 25px;
+    }
+    
+    .btn-action {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .btn {
+        padding: 6px 15px;
+        font-size: 0.9rem;
+    }
+}

@@ -84,7 +84,7 @@
                     </button>
                   @endif
                   
-                  {{-- ✨ BOTÓN DE ELIMINAR CON VALIDACIÓN MEJORADA --}}
+                  {{-- BOTÓN DE ELIMINAR CON VALIDACIÓN MEJORADA --}}
                   @if($tieneProductosListos)
                     <button type="button" class="btn btn-eliminar" disabled title="No se puede eliminar: tiene productos listos para entrega">
                       <i class="fas fa-trash"></i>
@@ -122,7 +122,7 @@
   </div>
 
 <script>
-// ✨ FUNCIÓN PARA CONFIRMAR ELIMINACIÓN CON VALIDACIÓN ADICIONAL
+// FUNCIÓN PARA CONFIRMAR ELIMINACIÓN CON VALIDACIÓN ADICIONAL
 function confirmarEliminacion(event) {
     event.preventDefault();
     

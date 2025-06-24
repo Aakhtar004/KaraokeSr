@@ -8,11 +8,9 @@
         <img src="{{ asset('images/izquierda.png') }}" alt="Regresar">
     </a>
     <div class="header-title">
-        <h1>Historial de Compras</h1>
+        <h1>Historial de Ventas Realizadas</h1>
     </div>
 </div>
-
-
 
 <div class="container mt-4 mb-5 pb-5">
     <!-- Filtros de fecha -->

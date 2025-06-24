@@ -1,0 +1,290 @@
+body {
+    background: rgba(180,180,180,0.4);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.container-fluid {
+    padding: 20px;
+}
+
+.mozo-header {
+    position: relative;
+    width: 100vw;
+    min-height: 180px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: url('/images/fondo_barra.png') center center/cover no-repeat;
+    margin-bottom: 15px;
+    border-radius: 0 0 24px 24px;
+    overflow: hidden;
+}
+.mozo-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(24, 19, 20, 0.82);
+    z-index: 1;
+}
+.mozo-header-back {
+    position: relative;
+    z-index: 2;
+    margin-left: 40px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 6px solid #e5735c;
+    transition: background 0.2s, border 0.2s;
+}
+
+.mozo-header-back:hover {
+    background: #e5735c;
+    border-color: #d05e4a;
+}
+
+.mozo-header-back-icon {
+    font-size: 3.2rem;
+    color: #e5735c;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.mozo-header-content {
+    position: relative;
+    z-index: 2;
+    margin-left: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mozo-header-title {
+    font-size: 2.8rem;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #d05e4a;
+    font-weight: normal;
+    letter-spacing: 0.4px;
+}
+
+.mozo-header-subtitle {
+    font-size: 3.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    color: #fffbe9;
+    font-weight: 300;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+/* Estilos para las tarjetas */
+.card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 20px !important;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 15px;
+    background-color: #fff;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+}
+
+.card-body {
+    padding: 15px;
+}
+
+/* Estilos para el comprobante */
+#comprobante-contenido {
+    background-color: #fff;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Estilos para el encabezado del comprobante */
+#comprobante-contenido h6 {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#comprobante-contenido .border {
+    border-radius: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+}
+
+/* Estilos para la tabla de productos */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+}
+
+.table-bordered {
+    border: 1px solid #dee2e6;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.table-sm td,
+.table-sm th {
+    padding: 5px;
+}
+
+/* Estilos para los totales */
+.text-end {
+    text-align: right !important;
+}
+
+.fw-bold {
+    font-weight: bold !important;
+}
+
+.small {
+    font-size: 80%;
+}
+
+/* Estilos para los botones */
+.btn {
+    border-radius: 12px;
+    padding: 8px 20px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-dark {
+    background-color: #333;
+    border-color: #333;
+    color: #fff;
+}
+
+.btn-dark:hover {
+    background-color: #D05E4A;
+    border-color: #D05E4A;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+/* Estilos para dispositivos móviles */
+@media (max-width: 700px) { 
+    .mozo-header { 
+        min-height: 120px; 
+        height: 150px; 
+    } 
+    .mozo-header-back { 
+        width: 50px; 
+        height: 50px; 
+        margin-left: 10px; 
+    } 
+    .mozo-header-back-icon { 
+        font-size: 2rem; 
+    } 
+    .mozo-header-content { 
+        margin-left: 15px; 
+    } 
+    .mozo-header-title { 
+        font-size: 2rem; 
+    } 
+    .mozo-header-subtitle { 
+        font-size: 1.7rem; 
+    } 
+}
+
+/* Estilos para impresión */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    #comprobante-contenido, #comprobante-contenido * {
+        visibility: visible;
+    }
+    
+    #comprobante-contenido {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none;
+        border: none;
+    }
+    
+    .btn {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: none;
+    }
+    
+    .card-body {
+        padding: 0;
+    }
+}
+
+/* Estilos para dispositivos móviles */
+@media (max-width: 600px) {
+    .container-fluid {
+        padding: 10px;
+    }
+    
+    .card {
+        margin-bottom: 10px;
+        border-radius: 15px !important;
+    }
+    
+    .card-body {
+        padding: 12px 10px;
+    }
+    
+    #comprobante-contenido {
+        padding: 15px 10px;
+    }
+    
+    .table thead th {
+        font-size: 0.8rem;
+    }
+    
+    .table td {
+        font-size: 0.9rem;
+        padding: 5px;
+    }
+    
+    .btn {
+        padding: 6px 15px;
+        font-size: 0.9rem;
+    }
+}

@@ -1,7 +1,20 @@
 @extends('view_layout.app')
 
+@push('styles')
+<link href="{{ asset('css/mozo_pedido_facturacion.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+@endpush
+
 @section('content')
-<x-app-header backUrl="{{ route('vista.mozo_historial') }}" title="Facturación - Mesa {{ $pedido->mesa->numero_mesa }}" />
+<div class="mozo-header">
+    <a href="{{ route('vista.mozo_historial') }}" class="mozo-header-back">
+        <span class="mozo-header-back-icon">&#8592;</span>
+    </a>
+    <div class="mozo-header-content">
+        <div class="mozo-header-title">Facturación</div>
+        <div class="mozo-header-subtitle">Mesa {{ $pedido->mesa->numero_mesa }}</div>
+    </div>
+</div>
 
 <div class="container d-flex flex-column align-items-center justify-content-center" style="min-height: 80vh;">
     <form id="facturacionForm" action="{{ route('pedidos.procesar_facturacion', $pedido->id_pedido) }}" method="POST" class="w-100" style="max-width: 400px;">
@@ -34,8 +47,6 @@
                 <button type="button" class="btn btn-outline-primary" id="consultarBtn">
                     <i class="bi bi-search"></i> Consultar
                 </button>
-                <button type="button" class="btn btn-outline-dark" id="vistaPreviaBtn">Vista Previa</button>
-                <button type="button" class="btn btn-outline-secondary" id="randomBtn">Randomizar</button>
             </div>
             <!-- ÁREA PARA MOSTRAR RESULTADO DE LA CONSULTA -->
             <div id="resultadoConsulta" class="mt-2" style="display: none;">
@@ -144,7 +155,7 @@ document.getElementById('tipo_comprobante').addEventListener('change', function(
     if (nombreCliente) nombreCliente.value = 'Cliente';
 });
 
-// ✨ FUNCIÓN UNIFICADA PARA CONSULTAR DNI O RUC CON VALIDACIÓN MEJORADA
+// FUNCIÓN UNIFICADA PARA CONSULTAR DNI O RUC CON VALIDACIÓN MEJORADA
 document.getElementById('consultarBtn').addEventListener('click', function() {
     const documento = document.getElementById('documento').value.trim();
     const tipoComprobante = document.getElementById('tipo_comprobante').value;

@@ -1,16 +1,9 @@
 @extends('view_layout.app')
+
 @section('content')
-<link href="{{ asset('css/agregar_producto.css') }}" rel="stylesheet">
+<x-app-header backUrl="{{ route('vista.user_menu') }}" title="Agregar Producto" />
 
-<!-- Header personalizado -->
-<div class="custom-header">
-    <a href="{{ route('vista.user_menu') }}" class="back-button">
-    <img src="{{ asset('images/izquierda.png') }}" alt="Regresar">
-</a>
-    <h1 class="page-title">Agregar Productos</h1>
-</div>
-
-<div class="container d-flex justify-content-center align-items-center form-container">
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
     <div class="card p-4" style="border-radius: 20px; background: rgba(255, 182, 182, 0.8); width: 100%; max-width: 400px;">
         @if(session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>

@@ -1,7 +1,7 @@
 @extends('view_layout.app')
 
 @section('content')
-<x-app-header backUrl="{{ route('vista.admin_historial') }}" title="Detalle de Pedidos - {{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}" />
+<x-app-header backUrl="{{ route('vista.admin_historial_ventas') }}" title="Detalle de Pedidos - {{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}" />
 
 <div class="container mt-4 mb-5 pb-5">
     @if($pedidos->isEmpty())

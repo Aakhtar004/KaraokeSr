@@ -1,7 +1,20 @@
 @extends('view_layout.app')
 
+@push('styles')
+<link href="{{ asset('css/mozo_editar_pedido.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+@endpush
+
 @section('content')
-<x-app-header backUrl="{{ route('vista.mozo_historial') }}" title="Editar Pedido" />
+<div class="mozo-header">
+    <a href="{{ route('vista.mozo_historial') }}" class="mozo-header-back">
+        <span class="mozo-header-back-icon">&#8592;</span>
+    </a>
+    <div class="mozo-header-content">
+        <div class="mozo-header-title">Editar</div>
+        <div class="mozo-header-subtitle">Pedido</div>
+    </div>
+</div>
 
 <div class="container mt-4 mb-5 pb-5">
     @if(session('error'))

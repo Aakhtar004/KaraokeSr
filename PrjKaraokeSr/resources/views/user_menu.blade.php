@@ -50,7 +50,7 @@
         @if($user->rol === 'administrador')
             <a class="menu-card btn btn-secondary btn-lg" href="{{ route('vista.admin_modificar_categoria') }}">
                 <img src="{{ asset('images/icon_inventario.png') }}" alt="Modificar">
-                <span>Modificar Precios y Stock</span>
+                <br><span>Modificar Precios y Stock</span>
             </a>
             <a class="menu-card btn btn-secondary btn-lg" href="{{ route('vista.admin_agregar_producto') }}">
                 <img src="{{ asset('images/icon_inventario.png') }}" alt="Agregar">
@@ -58,19 +58,19 @@
             </a>
             <a class="menu-card btn btn-secondary btn-lg" href="{{ route('vista.admin_gestion_usuarios') }}">
                 <img src="{{ asset('images/icon_inventario.png') }}" alt="Gestionar">
-                <span>Gestionar Usuarios</span>
+                <br><span>Gestionar Usuarios</span>
             </a>
-            <a class="menu-card btn btn-secondary btn-lg " href="{{ route('vista.admin_historial')}}">
+            <a class="menu-card btn btn-secondary btn-lg " href="{{ route('vista.admin_historial_ventas')}}">
                 <img src="{{ asset('images/icon_inventario.png') }}" alt="Historial"> 
-                <span>Ver Historial de Compras</span>
+                <br><span>Ver Historial de Ventas del Restobar</span>
             </a>
             <a class="menu-card btn btn-secondary btn-lg " href="{{ route('vista.admin_generar_lista_compras') }}">
                 <img src="{{ asset('images/icon_inventario.png') }}" alt="Compras"> 
-                <span>Generar lista de Compras</span>
+                <br><span>Generar lista de Compras</span>
             </a>
             <a class="menu-card btn btn-secondary btn-lg" href="{{ route('vista.admin_promociones') }}">
                 <img src="{{ asset('images/icon_inventario.png') }}" alt="Promociones"> 
-                <span>Gestionar Promociones</span>
+                <br><span>Gestionar Promociones</span>
             </a>
         @endif
     </div>

@@ -3,7 +3,7 @@
 @section('content')
 <div class="body-overlay"></div>
 
-<link href="{{ asset('css/admin_generarList_compras.css') }}" rel="stylesheet">
+<link href="{{ asset('css/admin_generar_lista_compras.css') }}" rel="stylesheet">
 <!-- Header personalizado -->
 <div class="custom-header">
     <a href="{{ route('vista.user_menu') }}" class="back-button">

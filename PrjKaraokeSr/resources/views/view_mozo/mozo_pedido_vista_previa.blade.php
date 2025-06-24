@@ -1,31 +1,102 @@
 @extends('view_layout.app')
 
+@push('styles')
+<link href="{{ asset('css/mozo_pedido_vista_previa.css') }}" rel="stylesheet" media="all">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+@endpush
+
 @section('content')
+
 <style>
 /* Estilos para impresión */
 @media print {
-    body * {
-        visibility: hidden;
-    }
-    
-    #comprobante-contenido, #comprobante-contenido * {
-        visibility: visible;
-    }
-    
-    #comprobante-contenido {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-    }
-    
-    .btn {
+    /* Ocultar elementos no necesarios */
+    .mozo-header,
+    .btn,
+    .card,
+    .container-fluid > .row:last-child {
         display: none !important;
+    }
+    
+    /* Resetear márgenes y padding del body */
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+    
+    /* Configurar el comprobante para impresión */
+    #comprobante-contenido {
+        position: static !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        width: 100% !important;
+        max-width: none !important;
+        background: white !important;
+        border: none !important;
+        box-shadow: none !important;
+        font-size: 12px !important;
+    }
+    
+    /* Asegurar que las tablas se impriman correctamente */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+    
+    th, td {
+        border: 1px solid #000 !important;
+        padding: 5px !important;
+        font-size: 11px !important;
+    }
+    
+    /* Evitar saltos de página dentro de elementos importantes */
+    .row, table, thead, tbody, tr {
+        page-break-inside: avoid !important;
+    }
+    
+    /* Forzar impresión en una sola página si es posible */
+    html, body {
+        height: auto !important;
+    }
+    
+    /* Remover colores de fondo que podrían no imprimirse */
+    * {
+        background: transparent !important;
+        color: black !important;
+    }
+    
+    /* Mantener el encabezado de la empresa visible */
+    .bg-white {
+        background: white !important;
+    }
+    
+    /* Estilo específico para el encabezado de la empresa */
+    #comprobante-contenido .row:first-child .col-6:first-child div:first-child {
+        background: #000 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+/* Estilos adicionales para mejorar la vista previa */
+@media screen {
+    #comprobante-contenido {
+        font-family: 'Courier New', monospace;
     }
 }
 </style>
 
-<x-app-header backUrl="{{ route('vista.mozo_historial') }}" title="Vista Previa del Comprobante" />
+<div class="mozo-header">
+    <a href="{{ route('vista.mozo_historial') }}" class="mozo-header-back">
+        <span class="mozo-header-back-icon">&#8592;</span>
+    </a>
+    <div class="mozo-header-content">
+        <div class="mozo-header-title">Vista Previa</div>
+        <div class="mozo-header-subtitle">Comprobante</div>
+    </div>
+</div>
 
 <div class="container-fluid p-4">
     <div class="row justify-content-center">

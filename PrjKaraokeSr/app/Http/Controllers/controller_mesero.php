@@ -467,7 +467,7 @@ class controller_mesero extends Controller
         $pedido = pedidos::with('detalles')->findOrFail($idPedido);
         
         try {
-            // ✨ VALIDACIÓN: No permitir eliminar pedidos con productos listos para entrega
+            // VALIDACIÓN: No permitir eliminar pedidos con productos listos para entrega
             $productosListos = $pedido->detalles->where('estado_item', 'LISTO_PARA_ENTREGA');
             
             if ($productosListos->count() > 0) {

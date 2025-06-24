@@ -171,9 +171,7 @@
                                 <p class="text-secondary text-sm mb-2">{{ $producto->descripcion }}</p>
                             @endif
                             <div class="flex justify-between items-center text-xs">
-                                <span class="text-gray-500">
-                                    <i class="fas fa-box mr-1"></i>Stock: {{ $producto->stock }}
-                                </span>
+                                
                                 @if($producto->porcentaje_descuento > 0)
                                     <span class="text-green-600 font-semibold">
                                         ¡Ahorra {{ $producto->porcentaje_descuento }}%!

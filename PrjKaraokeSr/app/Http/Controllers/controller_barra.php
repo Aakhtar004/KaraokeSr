@@ -63,18 +63,167 @@ class controller_barra extends Controller
         try {
             $detalle = pedido_detalles::with(['pedido.mesa', 'producto'])->findOrFail($idDetalle);
             
-            // Solo marcar como listo si el producto es de bar o ambos
-            if (in_array($detalle->producto->area_destino, ['bar', 'ambos'])) {
+            // Solo marcar como listo si el producto es de cocina o ambos
+            if (in_array($detalle->producto->area_destino, ['cocina', 'ambos'])) {
                 $detalle->update(['estado_item' => 'LISTO_PARA_ENTREGA']);
                 
                 // Retornar información de la mesa para el mensaje de éxito
                 $mesa = $detalle->pedido->mesa->numero_mesa ?? 'N/A';
                 return response()->json(['success' => true, 'mesa' => $mesa]);
             } else {
-                return response()->json(['success' => false, 'message' => 'Este producto no corresponde al área de bar.']);
+                return response()->json(['success' => false, 'message' => 'Este producto no corresponde al área de cocina.']);
             }
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al marcar el pedido como listo: ' . $e->getMessage()]);
         }
+    }
+
+    public function pedido_barra_inventario(Request $request)
+    {
+        $ids = $request->input('productos', []);
+        
+        if (empty($ids)) {
+            return back()->with('error', 'No se seleccionaron productos.');
+        }
+
+        $hoy = now()->format('Y-m-d');
+        $accion = $request->input('accion', 'nueva');
+        
+        // Solo procesar acciones específicas, NO la acción 'nueva'
+        if ($accion === 'confirmar_primera') {
+            productos::whereIn('id_producto', $ids)->update([
+                'estado' => 0,
+                'fecha_actualizacion' => now()
+            ]);
+            return back()->with('success', 'Los insumos se han añadido correctamente al pedido de hoy.');
+        }
+        
+        if ($accion === 'reemplazar') {
+            // Obtener IDs de categorías de bar para hacer la consulta más específica
+            $categoriasBar = ['Frutas', 'Ingredientes', 'Bebidas de Barra', 'Licores de Barra'];
+            $categoriasBarIds = categorias_producto::whereIn('nombre', $categoriasBar)->pluck('id_categoria_producto')->toArray();
+
+            // Debug: Log para verificar qué productos van a ser restaurados
+            $productosARestaurar = productos::whereIn('id_categoria_producto', $categoriasBarIds)
+                ->where('estado', 0)
+                ->whereRaw('DATE(fecha_actualizacion) = ?', [$hoy])
+                ->get();
+
+            Log::info('Productos a restaurar en reemplazar:', [
+                'cantidad' => $productosARestaurar->count(),
+                'productos' => $productosARestaurar->pluck('id_producto', 'nombre')->toArray(),
+                'fecha' => $hoy
+            ]);
+
+            // 1. Restaurar TODOS los productos de bar que fueron pedidos hoy a disponible
+            $productosRestaurados = productos::whereIn('id_categoria_producto', $categoriasBarIds)
+                ->where('estado', 0)
+                ->whereRaw('DATE(fecha_actualizacion) = ?', [$hoy])
+                ->update([
+                    'estado' => 1,
+                    'fecha_actualizacion' => now()
+                ]);
+
+            Log::info('Productos restaurados:', ['cantidad' => $productosRestaurados]);
+            
+            // 2. Marcar SOLO los nuevos productos como pedido
+            $productosNuevos = productos::whereIn('id_producto', $ids)->update([
+                'estado' => 0,
+                'fecha_actualizacion' => now()
+            ]);
+
+            Log::info('Productos nuevos marcados:', [
+                'cantidad' => $productosNuevos,
+                'ids' => $ids
+            ]);
+            
+            return back()->with('success', 'El pedido de hoy se ha actualizado con los nuevos insumos.');
+            
+        } elseif ($accion === 'agregar') {
+            // Obtener IDs de categorías de bar
+            $categoriasBar = ['Frutas', 'Ingredientes', 'Bebidas de Barra', 'Licores de Barra'];
+            $categoriasBarIds = categorias_producto::whereIn('nombre', $categoriasBar)->pluck('id_categoria_producto')->toArray();
+
+            // Verificar productos existentes usando IDs de categorías
+            $productosBarExistentes = productos::whereIn('id_categoria_producto', $categoriasBarIds)
+                ->where('estado', 0)
+                ->whereRaw('DATE(fecha_actualizacion) = ?', [$hoy])
+                ->get();
+
+            // Solo marcar los productos que NO están ya pedidos hoy
+            $productosExistentesIds = $productosBarExistentes->pluck('id_producto')->toArray();
+            $productosNuevosParaAgregar = array_diff($ids, $productosExistentesIds);
+            
+            if (!empty($productosNuevosParaAgregar)) {
+                productos::whereIn('id_producto', $productosNuevosParaAgregar)->update([
+                    'estado' => 0,
+                    'fecha_actualizacion' => now()
+                ]);
+                
+                $cantidadAgregados = count($productosNuevosParaAgregar);
+                $cantidadDuplicados = count($ids) - $cantidadAgregados;
+                
+                $mensaje = "Los insumos se han añadido correctamente al pedido de hoy.";
+                if ($cantidadDuplicados > 0) {
+                    $mensaje .= " ({$cantidadDuplicados} productos ya estaban en la lista)";
+                }
+                
+                return back()->with('success', $mensaje);
+            } else {
+                return back()->with('info', 'Todos los productos seleccionados ya están en la lista de hoy.');
+            }
+        }
+        
+        // Si llega aquí con acción 'nueva', es un error del flujo
+        return back()->with('error', 'Acción no válida. Use el modal para confirmar.');
+    }
+
+    // Nuevo endpoint para verificar estado vía AJAX
+    public function verificar_estado_inventario(Request $request)
+    {
+        $ids = $request->input('productos', []);
+        
+        if (empty($ids)) {
+            return response()->json(['error' => 'No se seleccionaron productos.']);
+        }
+
+        $hoy = now()->format('Y-m-d');
+        
+        // Obtener IDs de categorías de bar
+        $categoriasBar = ['Frutas', 'Ingredientes', 'Bebidas de Barra', 'Licores de Barra'];
+        $categoriasBarIds = categorias_producto::whereIn('nombre', $categoriasBar)->pluck('id_categoria_producto')->toArray();
+        
+        // Verificar si ya hay productos de bar marcados como pedido hoy usando IDs de categorías
+        $productosBarExistentes = productos::whereIn('id_categoria_producto', $categoriasBarIds)
+            ->where('estado', 0)
+            ->whereRaw('DATE(fecha_actualizacion) = ?', [$hoy])
+            ->with('categoria')
+            ->get();
+
+        // Obtener información de los productos nuevos
+        $productosNuevos = productos::whereIn('id_producto', $ids)->with('categoria')->get();
+        
+        $response = [
+            'tiene_pedido_previo' => $productosBarExistentes->count() > 0,
+            'productos_nuevos' => $productosNuevos->map(function($producto) {
+                return [
+                    'id' => $producto->id_producto,
+                    'nombre' => $producto->nombre,
+                    'categoria' => $producto->categoria->nombre
+                ];
+            })->groupBy('categoria')
+        ];
+        
+        if ($productosBarExistentes->count() > 0) {
+            $response['productos_existentes'] = $productosBarExistentes->map(function($producto) {
+                return [
+                    'id' => $producto->id_producto,
+                    'nombre' => $producto->nombre,
+                    'categoria' => $producto->categoria->nombre
+                ];
+            })->groupBy('categoria');
+        }
+        
+        return response()->json($response);
     }
 }

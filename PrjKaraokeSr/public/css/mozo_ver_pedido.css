@@ -1,0 +1,152 @@
+body {
+    background: rgba(180,180,180,0.4);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.container {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.mozo-header {
+    position: relative;
+    width: 100vw;
+    min-height: 180px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: url('/images/fondo_barra.png') center center/cover no-repeat;
+    margin-bottom: 15px;
+    border-radius: 0 0 24px 24px;
+    overflow: hidden;
+}
+.mozo-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(24, 19, 20, 0.82);
+    z-index: 1;
+}
+.mozo-header-back {
+    position: relative;
+    z-index: 2;
+    margin-left: 40px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 6px solid #e5735c;
+    transition: background 0.2s, border 0.2s;
+}
+
+.mozo-header-back:hover {
+    background: #e5735c;
+    border-color: #d05e4a;
+}
+
+.mozo-header-back-icon {
+    font-size: 3.2rem;
+    color: #e5735c;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.mozo-header-content {
+    position: relative;
+    z-index: 2;
+    margin-left: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mozo-header-title {
+    font-size: 2.8rem;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #d05e4a;
+    font-weight: normal;
+    letter-spacing: 0.4px;
+}
+
+.mozo-header-subtitle {
+    font-size: 3.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    color: #fffbe9;
+    font-weight: 300;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+/* Estilos para las tarjetas */
+.card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 20px !important;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 15px;
+    background-color: #fff;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+}
+
+.card-header {
+    background-color: #D05E4A !important;
+    color: #fff !important;
+    padding: 15px 20px;
+    font-weight: bold;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+.card-header.bg-dark {
+    background-color: #333 !important;
+}
+
+.card-body {
+    padding: 15px;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+@media (max-width: 700px) { 
+    .mozo-header { 
+        min-height: 120px; 
+        height: 150px; 
+    } 
+    .mozo-header-back { 
+        width: 50px; 
+        height: 50px; 
+        margin-left: 10px; 
+    } 
+    .mozo-header-back-icon { 
+        font-size: 2rem; 
+    } 
+    .mozo-header-content { 
+        margin-left: 15px; 
+    } 
+    .mozo-header-title { 
+        font-size: 2rem; 
+    } 
+    .mozo-header-subtitle { 
+        font-size: 1.7rem; 
+    } 
+}
