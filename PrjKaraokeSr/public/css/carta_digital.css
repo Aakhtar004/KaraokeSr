@@ -34,13 +34,35 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* ✅ ESTILOS PARA SECCIONES DE MENÚ */
 .menu-section {
-    display: none;
+    display: block; /* ← ESTE ES EL PROBLEMA: falta este CSS */
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+    margin-bottom: 3rem;
 }
 
 .menu-section.active {
     display: block;
-    animation: fadeIn 0.5s ease;
+    opacity: 1;
+}
+
+
+
+/* Efectos de transición suaves */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu-section {
+    animation: fadeIn 0.5s ease-in-out;
 }
 
 /* Estilos para la sección de promociones */
@@ -216,4 +238,10 @@ html.dark #promociones {
 
 .text-secondary {
     color: var(--color-text-secondary);
+}
+.menu-section {
+    display: none;
+}
+.menu-section.active {
+    display: block;
 }

@@ -142,6 +142,17 @@
     @endif
 </div>
 
+<!-- Botón flotante en la parte inferior derecha -->
+<div id="pdf-float-btn" style="position: fixed; bottom: 30px; right: 30px; z-index: 9999;">
+    <form id="pdfForm" action="{{ route('admin.ventas_pdf') }}" method="GET" target="_blank" style="display:inline;">
+        <input type="hidden" name="fecha" id="pdfFecha">
+        <input type="hidden" name="tipo" id="pdfTipo">
+        <button type="button" class="btn btn-danger shadow-lg" onclick="enviarPDF()">
+            <i class="fas fa-file-pdf"></i> Generar PDF de las Ventas
+        </button>
+    </form>
+</div>
+
 <script>
 function cambiarFecha(direccion) {
     const fechaInput = document.querySelector('input[name="fecha"]');
@@ -174,5 +185,20 @@ function cambiarFecha(direccion) {
     
     window.location.href = '{{ route("admin.filtrar_historial") }}?' + params.toString();
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    window.enviarPDF = function() {
+        // Obtiene los valores actuales de los filtros
+        const fecha = document.querySelector('input[name="fecha"]')?.value || '';
+        const tipo = document.querySelector('select[name="tipo"]')?.value || 'dia';
+
+        // Asigna los valores a los campos ocultos del form PDF
+        document.getElementById('pdfFecha').value = fecha;
+        document.getElementById('pdfTipo').value = tipo;
+
+        // Envía el formulario
+        document.getElementById('pdfForm').submit();
+    }
+});
 </script>
 @endsection

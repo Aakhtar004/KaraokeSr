@@ -22,11 +22,9 @@ use App\Http\Controllers\CartaDigitalController;
 Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
     // Ruta para todos los usuarios
     Route::get('/user_menu', [controller_karaoke::class, 'ver_user_menu'])->name('vista.user_menu');
-
-    // ✨ RUTAS DE API COMPARTIDAS - ACCESIBLES PARA TODOS LOS USUARIOS AUTENTICADOS
+    
     Route::post('api/consultar-dni', [controller_api::class, 'consultarDni'])->name('api.consultar_dni');
     Route::post('api/consultar-ruc', [controller_api::class, 'consultarRuc'])->name('api.consultar_ruc');
-
     // Rutas para administradores
     Route::middleware(['midctu:administrador'])->group(function () {
         // Modificar precios y stock
@@ -70,6 +68,10 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
     
         // NUEVA RUTA: Eliminar producto
         Route::delete('/admin/producto/{producto}/eliminar', [controller_admin::class, 'eliminarProducto'])->name('admin.producto.eliminar');
+        
+        // NUEVA RUTA: Generar PDF de ventas
+        Route::get('/admin/ventas/pdf', [controller_admin::class, 'generar_pdf_ventas'])->name('admin.ventas_pdf');
+
     });
     
     // Rutas para cocineros
@@ -132,4 +134,5 @@ Route::get('/', function () {
 
 // Ruta de la carta (públicamente accesible)
 Route::get('/carta', [CartaDigitalController::class, 'index']);
+
 

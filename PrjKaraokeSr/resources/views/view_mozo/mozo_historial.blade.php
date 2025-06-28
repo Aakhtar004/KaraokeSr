@@ -58,13 +58,16 @@
                 @php
                   // Verificar si el pedido tiene comprobante (está realmente pagado)
                   $tienePagos = $pedido->comprobante !== null;
+                  
                   // El estado real del pedido debe coincidir con la existencia del comprobante
                   $estadoReal = $tienePagos ? 'PAGADO' : $pedido->estado_pedido;
+
                   // Verificar si todos los productos están listos para entrega
                   $todosListos = $pedido->detalles->every(function($detalle) {
                       return $detalle->estado_item === 'LISTO_PARA_ENTREGA';
                   });
-                  // NUEVA VALIDACIÓN: Verificar si tiene productos listos (no se puede eliminar)
+
+                  // Verificar si tiene productos listos (no se puede eliminar)
                   $tieneProductosListos = $pedido->detalles->where('estado_item', 'LISTO_PARA_ENTREGA')->count() > 0;
                 @endphp
                 

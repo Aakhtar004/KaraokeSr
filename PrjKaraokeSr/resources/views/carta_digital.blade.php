@@ -247,10 +247,22 @@
 
                 // Show/Hide menu sections
                 menuSections.forEach(section => {
-                    if (section.getAttribute('id') === category || category === 'promociones') {
-                        section.classList.add('active');
+                    const sectionId = section.getAttribute('id');
+                    
+                    if (category === 'promociones') {
+                        // Si se selecciona promociones, solo mostrar la sección de promociones
+                        if (sectionId === 'promociones') {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
                     } else {
-                        section.classList.remove('active');
+                        // Para otras categorías, mostrar solo la sección correspondiente
+                        if (sectionId === category) {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
                     }
                 });
             });

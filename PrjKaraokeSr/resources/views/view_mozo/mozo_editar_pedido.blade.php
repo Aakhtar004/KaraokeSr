@@ -72,7 +72,7 @@
                                                id="cantidad-{{ $detalle->id_pedido_detalle }}"
                                                value="{{ $detalle->cantidad }}" 
                                                class="form-control mx-2 text-center" 
-                                               style="width: 60px;" 
+                                               style="width: 60px; color: #000;" 
                                                min="1"
                                                max="{{ $detalle->cantidad + $detalle->producto->stock }}"
                                                data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">

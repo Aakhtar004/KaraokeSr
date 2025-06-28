@@ -16,30 +16,23 @@ use App\Models\usuarios;
 use App\Models\pedido_detalles;
 use App\Models\comprobantes;
 use App\Models\pagos_pedido_detalle;
+use App\Models\promociones;
+use App\Models\promocion_productos;
 
 class controller_mesero extends Controller
 {
     public function ver_mozo_historial() 
     {
         $idUsuario = Auth::id();
+        
+        // Excluir pedidos que ya tienen comprobante (facturados)
         $pedidos = pedidos::with(['mesa', 'comprobante', 'detalles'])
             ->where('id_usuario_mesero', $idUsuario)
+            ->whereDoesntHave('comprobante') // Sirve para solo mostrar pedidos SIN comprobante
             ->orderBy('fecha_hora_pedido', 'desc')
             ->get();
 
-        foreach ($pedidos as $pedido) {
-            $tieneComprobante = $pedido->comprobante !== null;
-            
-            if ($tieneComprobante && $pedido->estado_pedido === 'PENDIENTE') {
-                $pedido->update(['estado_pedido' => 'PAGADO']);
-                $pedido->refresh();
-            }
-            elseif (!$tieneComprobante && $pedido->estado_pedido === 'PAGADO') {
-                $pedido->update(['estado_pedido' => 'PENDIENTE']);
-                $pedido->refresh();
-            }
-        }
-
+        
         return view('view_mozo.mozo_historial', compact('pedidos'));
     }
 

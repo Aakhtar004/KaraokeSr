@@ -7,87 +7,6 @@
 
 @section('content')
 
-<style>
-/* Estilos para impresión */
-@media print {
-    /* Ocultar elementos no necesarios */
-    .mozo-header,
-    .btn,
-    .card,
-    .container-fluid > .row:last-child {
-        display: none !important;
-    }
-    
-    /* Resetear márgenes y padding del body */
-    body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white !important;
-    }
-    
-    /* Configurar el comprobante para impresión */
-    #comprobante-contenido {
-        position: static !important;
-        margin: 0 !important;
-        padding: 20px !important;
-        width: 100% !important;
-        max-width: none !important;
-        background: white !important;
-        border: none !important;
-        box-shadow: none !important;
-        font-size: 12px !important;
-    }
-    
-    /* Asegurar que las tablas se impriman correctamente */
-    table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-    }
-    
-    th, td {
-        border: 1px solid #000 !important;
-        padding: 5px !important;
-        font-size: 11px !important;
-    }
-    
-    /* Evitar saltos de página dentro de elementos importantes */
-    .row, table, thead, tbody, tr {
-        page-break-inside: avoid !important;
-    }
-    
-    /* Forzar impresión en una sola página si es posible */
-    html, body {
-        height: auto !important;
-    }
-    
-    /* Remover colores de fondo que podrían no imprimirse */
-    * {
-        background: transparent !important;
-        color: black !important;
-    }
-    
-    /* Mantener el encabezado de la empresa visible */
-    .bg-white {
-        background: white !important;
-    }
-    
-    /* Estilo específico para el encabezado de la empresa */
-    #comprobante-contenido .row:first-child .col-6:first-child div:first-child {
-        background: #000 !important;
-        color: white !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-}
-
-/* Estilos adicionales para mejorar la vista previa */
-@media screen {
-    #comprobante-contenido {
-        font-family: 'Courier New', monospace;
-    }
-}
-</style>
-
 <div class="mozo-header">
     <a href="{{ route('vista.mozo_historial') }}" class="mozo-header-back">
         <span class="mozo-header-back-icon">&#8592;</span>
@@ -107,13 +26,13 @@
                         <!-- Encabezado -->
                         <div class="row mb-4">
                             <div class="col-6">
-                                <div style="background: #333; color: white; padding: 10px; border-radius: 5px;">
-                                    <h6 class="mb-1">CITYBAR PERU S.A.C</h6>
+                                <div class="empresa-header" style="background: #333; color: white; padding: 10px; border-radius: 5px;">
+                                    <h6 class="mb-1">Restobar Salón Rojo</h6>
                                     <small>Karaoke</small>
                                 </div>
                                 <div class="mt-2">
-                                    <small>RUC: 20123456789</small><br>
-                                    <small>Dirección: Av. Principal 123, Lima</small>
+                                    <small>RUC: 10255667781</small><br>
+                                    <small>Dirección: Gral Deustua 160, Tacna 23001</small>
                                 </div>
                             </div>
                             <div class="col-6 text-end">
@@ -171,7 +90,7 @@
                         <!-- Totales -->
                         <div class="row">
                             <div class="col-6">
-                                <p class="small">Son soles: {{ strtoupper('total en letras') }}</p>
+                                
                             </div>
                             <div class="col-6">
                                 <table class="table table-sm">

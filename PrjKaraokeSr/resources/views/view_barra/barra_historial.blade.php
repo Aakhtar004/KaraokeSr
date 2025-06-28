@@ -33,13 +33,13 @@
                          data-mesa-numero="{{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}"
                          data-fecha="{{ $detalles->first()->fecha_creacion }}">
                         
-                        <!-- ✨ NÚMERO DE ORDEN AL LADO IZQUIERDO -->
+                        <!-- NÚMERO DE ORDEN AL LADO IZQUIERDO -->
                         <div class="card-historial-lateral">
                             <span class="numero-orden">{{ $loop->iteration }}</span>
                         </div>
                         
                         <div class="card-historial-main">
-                            <!-- ✨ HEADER CON NÚMERO DE MESA PROMINENTE -->
+                            <!-- HEADER CON NÚMERO DE MESA PROMINENTE -->
                             <div class="card-historial-mesa-header">
                                 <h2 class="mesa-titulo">Mesa {{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}</h2>
                                 <span class="fecha-hora">
@@ -137,7 +137,7 @@
 let pedidoDetalleIdActual = null;
 let mesaNumeroActual = null;
 
-// ✨ FUNCIÓN PARA ORDENAR PEDIDOS POR FECHA Y REENUMERAR
+// FUNCIÓN PARA ORDENAR PEDIDOS POR FECHA Y REENUMERAR
 function ordenarYRenumerarPedidos() {
     const container = document.getElementById('pedidosContainer');
     const cards = Array.from(container.querySelectorAll('.card-historial-wrapper'));
@@ -238,7 +238,7 @@ function marcarPedidoListo() {
                 
                 setTimeout(() => {
                     cardWrapper.remove();
-                    // ✨ REORDENAR DESPUÉS DE ELIMINAR
+                    // REORDENAR DESPUÉS DE ELIMINAR
                     ordenarYRenumerarPedidos();
                     
                     const remainingCards = document.querySelectorAll('.card-historial-wrapper');
@@ -263,7 +263,7 @@ function marcarPedidoListo() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ✨ ORDENAR PEDIDOS AL CARGAR LA PÁGINA
+    // ORDENAR PEDIDOS AL CARGAR LA PÁGINA
     ordenarYRenumerarPedidos();
     
     // Configurar eventos para los botones "Listo"

@@ -14,10 +14,7 @@
                 <h1>Comprobante de Pago</h1>
                 <small>{{ $comprobante->tipo_comprobante }} {{ $comprobante->serie_comprobante }}-{{ $comprobante->numero_correlativo_comprobante }}</small>
             </div>
-            <a href="{{ route('admin.detalle_pedido', $comprobante->pedido->fecha_hora_pedido->format('Y-m-d')) }}" 
-               class="btn btn-light">
-                <i class="fas fa-arrow-left"></i> Volver al Detalle
-            </a>
+            
         </div>
     </div>
 </div>
@@ -103,7 +100,7 @@
                         <!-- Totales -->
                         <div class="row">
                             <div class="col-6">
-                                <p class="small">Son soles: {{ strtoupper('total en letras') }}</p>
+                                
                                 
                                 <!-- Información de pago -->
                                 <div class="mt-3">
@@ -142,29 +139,22 @@
                                     @endif
                                 </small>
                             </div>
-                            <div class="col-6 text-end">
-                                <small>
-                                    @if($comprobante->hash_sunat)
-                                        Hash SUNAT: {{ $comprobante->hash_sunat }}<br>
-                                    @endif
-                                    Código QR: Disponible
-                                </small>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
+    
     <!-- Botones de acción -->
     <div class="admin-actions">
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="d-flex justify-content-between">
-                    <a href="{{ route('vista.admin_historial_ventas') }}" 
-                       class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Volver al Historial
+                    <a href="{{ route('admin.detalle_pedido', $comprobante->pedido->fecha_hora_pedido->format('Y-m-d')) }}" 
+                    class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Volver al Detalle
                     </a>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-primary" onclick="window.print()">

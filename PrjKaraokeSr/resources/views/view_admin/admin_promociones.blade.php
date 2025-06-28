@@ -155,6 +155,28 @@
                             <input type="date" class="form-control" id="fechaFin" name="fecha_fin" required>
                         </div>
                     </div>
+                    
+                    <!-- NUEVO CAMPO: URL de Imagen -->
+                    <div class="mb-3">
+                        <label for="imagenUrlPromocion" class="form-label">URL de Imagen de la Promoción</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-image"></i></span>
+                            <input type="url" class="form-control" id="imagenUrlPromocion" name="imagen_url_promocion" 
+                                   placeholder="https://ejemplo.com/imagen-promocion.jpg">
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            URL opcional de la imagen que representará la promoción. Debe ser una URL válida (http:// o https://)
+                        </small>
+                        
+                        <!-- Preview de imagen -->
+                        <div id="imagenPreview" class="mt-2" style="display: none;">
+                            <img id="imagenPreviewImg" src="" alt="Vista previa" class="img-thumbnail" style="max-width: 200px; max-height: 150px;">
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="limpiarImagenPreview()">
+                                <i class="fas fa-times"></i> Quitar
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Selección de productos -->
                     <div class="mb-3">
@@ -296,6 +318,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fechaInicio').addEventListener('change', validarFechas);
     document.getElementById('fechaFin').addEventListener('change', validarFechas);
     
+    // ✅ NUEVO: Event listener para vista previa de imagen
+    document.getElementById('imagenUrlPromocion').addEventListener('input', function() {
+        mostrarVistaPrevia(this.value);
+    });
+    
+    document.getElementById('imagenUrlPromocion').addEventListener('blur', function() {
+        validarUrlImagen(this.value);
+    });
+    
     // Cargar productos disponibles
     cargarProductosDisponibles();
 });
@@ -307,6 +338,10 @@ function abrirModalNuevaPromocion() {
     document.getElementById('formPromocion').reset();
     document.getElementById('promocionId').value = '';
     document.getElementById('estadoPromocion').checked = true;
+    
+    // ✅ LIMPIAR IMAGEN
+    document.getElementById('imagenUrlPromocion').value = '';
+    document.getElementById('imagenPreview').style.display = 'none';
     
     // Limpiar productos seleccionados
     productosSeleccionadosTemp = [];
@@ -336,44 +371,55 @@ function editarPromocion(promocionId) {
             'Accept': 'application/json'
         }
     })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error en la respuesta del servidor: ' + response.status);
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Error en la respuesta del servidor: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            const promocion = data.promocion;
+            
+            document.getElementById('promocionId').value = promocion.id_promocion;
+            document.getElementById('nombrePromocion').value = promocion.nombre_promocion;
+            document.getElementById('stockPromocion').value = promocion.stock_promocion;
+            document.getElementById('fechaInicio').value = promocion.fecha_inicio;
+            document.getElementById('fechaFin').value = promocion.fecha_fin;
+            
+            // ✅ CARGAR URL DE IMAGEN
+            const imagenUrl = promocion.imagen_url_promocion || '';
+            document.getElementById('imagenUrlPromocion').value = imagenUrl;
+            if (imagenUrl) {
+                mostrarVistaPrevia(imagenUrl);
             }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                const promocion = data.promocion;
-                
-                document.getElementById('promocionId').value = promocion.id_promocion;
-                document.getElementById('nombrePromocion').value = promocion.nombre_promocion;
-                document.getElementById('stockPromocion').value = promocion.stock_promocion;
-                document.getElementById('fechaInicio').value = promocion.fecha_inicio;
-                document.getElementById('fechaFin').value = promocion.fecha_fin;
-                
-                // Determinar tipo de promoción
-                if (promocion.descripcion_promocion.includes('2x1')) {
-                    document.getElementById('tipoPromocion').value = '2x1';
-                } else if (promocion.descripcion_promocion.includes('10%')) {
-                    document.getElementById('tipoPromocion').value = '10%descuento';
-                } else if (promocion.descripcion_promocion.includes('50%')) {
-                    document.getElementById('tipoPromocion').value = '50%descuento';
-                }
-                
-                // Cargar productos seleccionados
-                productosSeleccionadosTemp = promocion.productos || [];
-                actualizarProductosSeleccionados();
-                
-                new bootstrap.Modal(document.getElementById('modalPromocion')).show();
-            } else {
-                alert('Error al cargar promoción: ' + data.message);
+            
+            const estadoCheckbox = document.getElementById('estadoPromocion');
+            estadoCheckbox.checked = promocion.estado_promocion === 'activa';
+            actualizarTextoEstado();
+            
+            // Determinar tipo de promoción
+            if (promocion.descripcion_promocion.includes('2x1')) {
+                document.getElementById('tipoPromocion').value = '2x1';
+            } else if (promocion.descripcion_promocion.includes('10%')) {
+                document.getElementById('tipoPromocion').value = '10%descuento';
+            } else if (promocion.descripcion_promocion.includes('50%')) {
+                document.getElementById('tipoPromocion').value = '50%descuento';
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al cargar promoción: ' + error.message);
-        });
+            
+            // Cargar productos seleccionados
+            productosSeleccionadosTemp = promocion.productos || [];
+            actualizarProductosSeleccionados();
+            
+            new bootstrap.Modal(document.getElementById('modalPromocion')).show();
+        } else {
+            alert('Error al cargar promoción: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al cargar promoción: ' + error.message);
+    });
 }
 
 function cargarProductosDisponibles() {
@@ -433,14 +479,52 @@ function cargarProductosEnModal() {
             
             const isSelected = productosSeleccionadosTemp.includes(producto.id_producto);
             
+            // ✅ NUEVA LÓGICA: Determinar información de stock según categoría
+            let stockInfo = '';
+            let stockBadge = '';
+            
+            if (categoria === 'Cocteles') {
+                // Para cocteles: mostrar estado de disponibilidad
+                if (producto.estado == 1) {
+                    stockInfo = 'Disponible';
+                    stockBadge = '<span class="badge bg-success">Disponible</span>';
+                } else {
+                    stockInfo = 'No disponible';
+                    stockBadge = '<span class="badge bg-danger">No disponible</span>';
+                }
+            } else {
+                // Para otros productos: mostrar stock numérico
+                stockInfo = `Stock: ${producto.stock}`;
+                if (producto.stock > 10) {
+                    stockBadge = '<span class="badge bg-success">Stock: ' + producto.stock + '</span>';
+                } else if (producto.stock > 0) {
+                    stockBadge = '<span class="badge bg-warning">Stock: ' + producto.stock + '</span>';
+                } else {
+                    stockBadge = '<span class="badge bg-danger">Sin stock</span>';
+                }
+            }
+            
             col.innerHTML = `
                 <div class="producto-card ${isSelected ? 'selected' : ''}" 
                      data-producto-id="${producto.id_producto}" 
                      data-producto-nombre="${producto.nombre}"
                      data-producto-precio="${producto.precio_unitario}"
                      onclick="toggleProducto(${producto.id_producto})">
-                    <h6 class="mb-1">${producto.nombre}</h6>
-                    <small class="text-success fw-bold">S/ ${parseFloat(producto.precio_unitario).toFixed(2)}</small>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-1">${producto.nombre}</h6>
+                        <small class="text-success fw-bold">S/ ${parseFloat(producto.precio_unitario).toFixed(2)}</small>
+                    </div>
+                    
+                    <!-- ✅ MOSTRAR STOCK DEBAJO DEL NOMBRE -->
+                    <div class="mb-2">
+                        ${stockBadge}
+                    </div>
+                    
+                    <!-- Categoría -->
+                    <small class="text-muted d-block mb-2">
+                        <i class="fas fa-tag me-1"></i>${categoria}
+                    </small>
+                    
                     ${isSelected ? '<div class="text-success mt-1"><i class="fas fa-check-circle"></i> Seleccionado</div>' : ''}
                 </div>
             `;
@@ -706,5 +790,45 @@ document.getElementById('tipoPromocion').addEventListener('change', function() {
         actualizarProductosSeleccionados();
     }
 });
+
+// ✅ NUEVAS FUNCIONES PARA MANEJO DE IMAGEN
+function mostrarVistaPrevia(url) {
+    const preview = document.getElementById('imagenPreview');
+    const img = document.getElementById('imagenPreviewImg');
+    
+    if (url && esUrlValida(url)) {
+        img.src = url;
+        img.onload = function() {
+            preview.style.display = 'block';
+        };
+        img.onerror = function() {
+            preview.style.display = 'none';
+            console.warn('No se pudo cargar la imagen:', url);
+        };
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function limpiarImagenPreview() {
+    document.getElementById('imagenUrlPromocion').value = '';
+    document.getElementById('imagenPreview').style.display = 'none';
+}
+
+function esUrlValida(url) {
+    try {
+        const urlObj = new URL(url);
+        return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch (e) {
+        return false;
+    }
+}
+
+function validarUrlImagen(url) {
+    if (url && !esUrlValida(url)) {
+        alert('Por favor ingresa una URL válida que comience con http:// o https://');
+        document.getElementById('imagenUrlPromocion').focus();
+    }
+}
 </script>
 @endsection

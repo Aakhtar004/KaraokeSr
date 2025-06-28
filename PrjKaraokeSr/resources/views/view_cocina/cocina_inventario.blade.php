@@ -94,10 +94,6 @@
                                                         @endif
                                                         <h5 class="card-title">{{ $producto->nombre }}</h5>
                                                         <p class="card-text">{{ $producto->descripcion }}</p>
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <span class="badge bg-primary">Stock: {{ $producto->stock }}</span>
-                                                            <span class="text-muted small">{{ $producto->unidad_medida }}</span>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

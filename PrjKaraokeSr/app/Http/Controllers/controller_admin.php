@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 
+
+
 // Importar modelos
 use App\Models\categorias_producto;
 use App\Models\productos;
@@ -590,7 +592,6 @@ class controller_admin extends Controller
         return view('view_admin.admin_promociones', compact('promociones', 'productos'));
     }
 
-    // FIX: Nuevo método para obtener datos de promoción específica
     public function obtener_promocion($id)
     {
         try {
@@ -602,27 +603,30 @@ class controller_admin extends Controller
                     'message' => 'Promoción no encontrada'
                 ], 404);
             }
-            
-            $productosIds = $promocion->productos->pluck('id_producto')->toArray();
-            
+
+            // Formatear datos para el frontend
+            $promocionData = [
+                'id_promocion' => $promocion->id_promocion,
+                'nombre_promocion' => $promocion->nombre_promocion,
+                'descripcion_promocion' => $promocion->descripcion_promocion,
+                'precio_promocion' => $promocion->precio_promocion,
+                'fecha_inicio' => $promocion->fecha_inicio->format('Y-m-d'),
+                'fecha_fin' => $promocion->fecha_fin->format('Y-m-d'),
+                'estado_promocion' => $promocion->estado_promocion,
+                'stock_promocion' => $promocion->stock_promocion,
+                'imagen_url_promocion' => $promocion->imagen_url_promocion,
+                'productos' => $promocion->productos->pluck('id_producto')->toArray()
+            ];
+
             return response()->json([
                 'success' => true,
-                'promocion' => [
-                    'id_promocion' => $promocion->id_promocion,
-                    'nombre_promocion' => $promocion->nombre_promocion,
-                    'descripcion_promocion' => $promocion->descripcion_promocion,
-                    'precio_promocion' => $promocion->precio_promocion,
-                    'fecha_inicio' => $promocion->fecha_inicio->format('Y-m-d'),
-                    'fecha_fin' => $promocion->fecha_fin->format('Y-m-d'),
-                    'stock_promocion' => $promocion->stock_promocion ?? 0,
-                    'productos' => $productosIds
-                ]
+                'promocion' => $promocionData
             ]);
+
         } catch (\Exception $e) {
             Log::error('Error al obtener promoción', [
-                'promocion_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'id' => $id,
+                'error' => $e->getMessage()
             ]);
             
             return response()->json([
@@ -635,6 +639,7 @@ class controller_admin extends Controller
     public function store_promocion(Request $request)
     {
         try {
+            // Validaciones
             $request->validate([
                 'nombre_promocion' => 'required|string|max:150|unique:promociones,nombre_promocion',
                 'tipo_promocion' => 'required|in:2x1,10%descuento,50%descuento',
@@ -642,7 +647,9 @@ class controller_admin extends Controller
                 'productos.*' => 'exists:productos,id_producto',
                 'fecha_inicio' => 'required|date|after_or_equal:today',
                 'fecha_fin' => 'required|date|after:fecha_inicio',
-                'stock_promocion' => 'required|integer|min:1|max:999'
+                'stock_promocion' => 'required|integer|min:1|max:999',
+                'estado_promocion' => 'nullable|in:activa,inactiva',
+                'imagen_url_promocion' => 'nullable|url|max:500',
             ], [
                 'nombre_promocion.required' => 'El nombre de la promoción es obligatorio',
                 'nombre_promocion.unique' => 'Ya existe una promoción con este nombre',
@@ -653,14 +660,16 @@ class controller_admin extends Controller
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
                 'stock_promocion.required' => 'El stock de promoción es obligatorio',
                 'stock_promocion.min' => 'El stock debe ser mínimo 1',
-                'stock_promocion.max' => 'El stock no puede ser mayor a 999'
+                'stock_promocion.max' => 'El stock no puede ser mayor a 999',
+                'imagen_url_promocion.url' => 'La URL de la imagen debe ser válida',
+                'imagen_url_promocion.max' => 'La URL de la imagen no puede exceder 500 caracteres',
             ]);
 
             // Validar que el stock no exceda el stock mínimo de los productos
             $productosIds = $request->input('productos');
             $productos = productos::whereIn('id_producto', $productosIds)->get();
             $stockMinimo = $productos->min('stock');
-            
+
             if ($request->stock_promocion > $stockMinimo) {
                 return response()->json([
                     'success' => false,
@@ -689,16 +698,20 @@ class controller_admin extends Controller
                     $descripcion = $request->tipo_promocion;
             }
 
+            // CORREGIDO: Usar el estado seleccionado por el usuario
+            $estadoPromocion = $request->estado_promocion ?? 'inactiva';
+
             $promocion = promociones::create([
                 'nombre_promocion' => $request->nombre_promocion,
                 'descripcion_promocion' => $descripcion,
                 'precio_promocion' => round($precioPromocion, 2),
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin' => $request->fecha_fin,
-                'estado_promocion' => 'activa',
+                'estado_promocion' => $estadoPromocion,
                 'stock_promocion' => $request->stock_promocion,
+                'imagen_url_promocion' => $request->imagen_url_promocion,
                 'fecha_creacion' => now(),
-                'fecha_actualizacion' => now()
+                'fecha_actualizacion' => now(),
             ]);
 
             // Agregar productos a la promoción
@@ -763,7 +776,9 @@ class controller_admin extends Controller
                 'productos.*' => 'exists:productos,id_producto',
                 'fecha_inicio' => $fechaInicioRule,
                 'fecha_fin' => 'required|date|after:fecha_inicio',
-                'stock_promocion' => 'required|integer|min:1|max:999'
+                'stock_promocion' => 'required|integer|min:1|max:999',
+                'estado_promocion' => 'nullable|in:activa,inactiva',
+                'imagen_url_promocion' => 'nullable|url|max:500',
             ], [
                 'nombre_promocion.required' => 'El nombre de la promoción es obligatorio',
                 'nombre_promocion.unique' => 'Ya existe una promoción con este nombre',
@@ -774,22 +789,15 @@ class controller_admin extends Controller
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
                 'stock_promocion.required' => 'El stock de promoción es obligatorio',
                 'stock_promocion.min' => 'El stock debe ser mínimo 1',
-                'stock_promocion.max' => 'El stock no puede ser mayor a 999'
+                'stock_promocion.max' => 'El stock no puede ser mayor a 999',
+                'imagen_url_promocion.url' => 'La URL de la imagen debe ser válida'
             ]);
 
-            // Validar stock
+            // Validar que el stock no exceda el stock mínimo de los productos
             $productosIds = $request->input('productos');
             $productos = productos::whereIn('id_producto', $productosIds)->get();
-            
-            if ($productos->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se encontraron productos válidos'
-                ], 422);
-            }
-            
             $stockMinimo = $productos->min('stock');
-            
+
             if ($request->stock_promocion > $stockMinimo) {
                 return response()->json([
                     'success' => false,
@@ -797,7 +805,7 @@ class controller_admin extends Controller
                 ], 422);
             }
 
-            // Calcular nuevo precio
+            // Calcular precio de promoción basado en tipo
             $precioTotal = $productos->sum('precio_unitario');
             
             switch ($request->tipo_promocion) {
@@ -818,13 +826,19 @@ class controller_admin extends Controller
                     $descripcion = $request->tipo_promocion;
             }
 
+            // CORREGIDO: Usar el estado seleccionado por el usuario
+            $estadoPromocion = $request->estado_promocion ?? 'inactiva';
+
+            // Actualizar promoción
             $promocion->update([
                 'nombre_promocion' => $request->nombre_promocion,
                 'descripcion_promocion' => $descripcion,
                 'precio_promocion' => round($precioPromocion, 2),
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin' => $request->fecha_fin,
+                'estado_promocion' => $estadoPromocion,
                 'stock_promocion' => $request->stock_promocion,
+                'imagen_url_promocion' => $request->imagen_url_promocion,
                 'fecha_actualizacion' => now()
             ]);
 
@@ -856,15 +870,14 @@ class controller_admin extends Controller
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error al actualizar promoción', [
-                'promocion_id' => $id,
+                'id' => $id,
                 'request' => $request->all(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
             
             return response()->json([
                 'success' => false,
-                'message' => 'Error interno del servidor: ' . $e->getMessage()
+                'message' => 'Error interno del servidor'
             ], 500);
         }
     }
@@ -922,6 +935,76 @@ class controller_admin extends Controller
                 'message' => 'Error al obtener productos: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    //Implementacion de PDF de ventas
+    public function generar_pdf_ventas(Request $request)
+    {
+        require_once base_path('vendor/setasign/fpdf/fpdf.php'); // <-- Agrega esto
+
+        $fecha = $request->input('fecha', now()->format('Y-m-d'));
+        $tipo = $request->input('tipo', 'dia');
+
+        // Obtener los pedidos igual que en ver_admin_historial_ventas
+        $query = pedidos::with(['mesa', 'detalles.producto', 'comprobante', 'mesero']);
+
+        switch ($tipo) {
+            case 'dia':
+                $query->whereDate('fecha_hora_pedido', $fecha);
+                break;
+            case 'semana':
+                $inicio = now()->parse($fecha)->startOfWeek();
+                $fin = now()->parse($fecha)->endOfWeek();
+                $query->whereBetween('fecha_hora_pedido', [$inicio, $fin]);
+                break;
+            case 'mes':
+                $query->whereYear('fecha_hora_pedido', now()->parse($fecha)->year)
+                    ->whereMonth('fecha_hora_pedido', now()->parse($fecha)->month);
+                break;
+        }
+
+        $pedidos = $query->orderBy('fecha_hora_pedido', 'desc')->get();
+
+        // Crear PDF
+        $pdf = new \FPDF();
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 14);
+        $pdf->Cell(0, 10, utf8_decode('Reporte de Ventas'), 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 8, utf8_decode('Fecha: ' . $fecha . ' | Tipo: ' . ucfirst($tipo)), 0, 1, 'C');
+        $pdf->Ln(2);
+
+        // Encabezado de tabla
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(15, 7, utf8_decode('ID'), 1);
+        $pdf->Cell(20, 7, utf8_decode('Mesa'), 1);
+        $pdf->Cell(35, 7, utf8_decode('Mesero'), 1);
+        $pdf->Cell(35, 7, utf8_decode('Estado'), 1);
+        $pdf->Cell(25, 7, utf8_decode('Total'), 1);
+        $pdf->Cell(35, 7, utf8_decode('Fecha/Hora'), 1);
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 8);
+        foreach ($pedidos as $pedido) {
+            $pdf->Cell(15, 6, $pedido->id_pedido, 1);
+            $pdf->Cell(20, 6, utf8_decode($pedido->mesa->numero_mesa ?? '-'), 1);
+            $pdf->Cell(35, 6, utf8_decode($pedido->mesero->nombres ?? '-'), 1);
+            $pdf->Cell(35, 6, utf8_decode($pedido->comprobante ? 'FACTURADO' : 'INCONCLUSO'), 1);
+            $pdf->Cell(25, 6, 'S/ ' . number_format($pedido->total_pedido, 2), 1);
+            $pdf->Cell(35, 6, $pedido->fecha_hora_pedido->format('d/m/Y H:i'), 1);
+            $pdf->Ln();
+        }
+
+        // Totales
+        $pdf->Ln(2);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(0, 8, utf8_decode('Total de Pedidos: ' . $pedidos->count()), 0, 1);
+        $pdf->Cell(0, 8, utf8_decode('Total Vendido: S/ ' . number_format($pedidos->sum('total_pedido'), 2)), 0, 1);
+
+        // Salida del PDF
+        return response($pdf->Output('S', 'ventas.pdf'))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="ventas.pdf"');
     }
 
     

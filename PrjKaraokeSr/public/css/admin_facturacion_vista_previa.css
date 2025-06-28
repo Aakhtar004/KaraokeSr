@@ -55,7 +55,7 @@ th {
 
 /* Encabezado de empresa */
 .empresa-header {
-    background: #333;
+    
     color: white;
     padding: 10px;
     border-radius: 5px;
@@ -88,13 +88,18 @@ th {
     }
     
     /* Mantener el encabezado de la empresa visible */
-    .empresa-header {
-        background: #000 !important;
+    /* .empresa-header {
+        
         color: white !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+    } */
+
+    .empresa-header {
+        color: black !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
-    
     /* Asegurar que las tablas se impriman correctamente */
     table {
         width: 100% !important;
@@ -118,11 +123,7 @@ th {
         color: black !important;
     }
     
-    /* Excepciones para elementos que deben mantener colores */
-    .empresa-header {
-        background: #000 !important;
-        color: white !important;
-    }
+   
 }
 
 /* Responsive */

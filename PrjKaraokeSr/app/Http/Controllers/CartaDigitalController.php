@@ -7,18 +7,11 @@ use App\Models\productos;
 use App\Models\categorias_producto;
 use App\Models\promociones;
 
+
 class CartaDigitalController extends Controller
 {
     public function index()
     {
-        // // Obtener categorías activas que tienen productos activos
-        // $categorias = categorias_producto::where('estado', 1)
-        //     ->whereHas('productos', function($query) {
-        //         $query->where('estado', 1);
-        //     })
-        //     ->orderBy('nombre')
-        //     ->get();
-
         $categoriasCartaShow = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
         
         // Obtener solo las categorías específicas para meseros
@@ -62,7 +55,25 @@ class CartaDigitalController extends Controller
             ->orderBy('nombre_promocion')
             ->get();
 
-        // Procesar promociones para la carta
+        // NUEVO: Crear array de productos individuales con promociones
+        $productosConPromocion = [];
+        foreach ($promocionesActivas as $promocion) {
+            foreach ($promocion->productos as $promoProducto) {
+                if ($promoProducto->producto && $promoProducto->producto->estado == 1) {
+                    $productosConPromocion[$promoProducto->producto->id_producto] = [
+                        'promocion_id' => $promocion->id_promocion,
+                        'nombre_promocion' => $promocion->nombre_promocion,
+                        'descripcion_promocion' => $promocion->descripcion_promocion,
+                        'precio_original' => $promoProducto->precio_original_referencia,
+                        'precio_promocional' => $this->calcularPrecioPromocional($promoProducto->precio_original_referencia, $promocion->descripcion_promocion),
+                        'tipo_promocion' => $this->detectarTipoPromocion($promocion->descripcion_promocion),
+                        'porcentaje_descuento' => $this->calcularPorcentajeDescuento($promoProducto->precio_original_referencia, $promocion->descripcion_promocion)
+                    ];
+                }
+            }
+        }
+
+        // Procesar promociones para la carta (promociones completas)
         $promocionesParaCarta = [];
         foreach ($promocionesActivas as $promocion) {
             // Verificar que todos los productos tengan stock
@@ -149,5 +160,41 @@ class CartaDigitalController extends Controller
         ];
 
         return view('carta_digital', compact('categorias', 'productosPorCategoria', 'promocionesParaCarta', 'iconos'));
+    }
+
+    // NUEVO: Función para calcular precio promocional individual
+    private function calcularPrecioPromocional($precioOriginal, $descripcionPromocion)
+    {
+        if (stripos($descripcionPromocion, '10%') !== false) {
+            return $precioOriginal * 0.9;
+        } elseif (stripos($descripcionPromocion, '50%') !== false) {
+            return $precioOriginal * 0.5;
+        } elseif (stripos($descripcionPromocion, '2x1') !== false) {
+            return $precioOriginal / 2;
+        }
+        return $precioOriginal;
+    }
+
+    // NUEVO: Función para calcular porcentaje de descuento
+    private function calcularPorcentajeDescuento($precioOriginal, $descripcionPromocion)
+    {
+        $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $descripcionPromocion);
+        if ($precioOriginal > 0 && $precioPromocional < $precioOriginal) {
+            return round((($precioOriginal - $precioPromocional) / $precioOriginal) * 100);
+        }
+        return 0;
+    }
+
+    // NUEVO: Función para detectar tipo de promoción
+    private function detectarTipoPromocion($descripcion)
+    {
+        if (stripos($descripcion, '2x1') !== false) {
+            return '2x1';
+        } elseif (stripos($descripcion, '10%') !== false) {
+            return '10%';
+        } elseif (stripos($descripcion, '50%') !== false) {
+            return '50%';
+        }
+        return 'personalizada';
     }
 }

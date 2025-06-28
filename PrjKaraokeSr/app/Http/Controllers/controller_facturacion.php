@@ -67,44 +67,19 @@ class controller_facturacion extends Controller
 
     public function procesar_facturacion(Request $request, $idPedido)
     {
-        $pedido = pedidos::with('detalles')->findOrFail($idPedido);
-        
-        // VALIDAR QUE TODOS LOS PRODUCTOS ESTÉN LISTOS PARA ENTREGA
-        $productosNoListos = $pedido->detalles->where('estado_item', '!=', 'LISTO_PARA_ENTREGA');
-        
-        if ($productosNoListos->count() > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se puede procesar el pago. Algunos productos aún no están listos para entrega.'
-            ], 400);
-        }
-        
-        // VALIDAR QUE NO TENGA YA UN COMPROBANTE (verificación directa más confiable)
+        // Verificar que el pedido no haya sido ya procesado
         $comprobanteExistente = comprobantes::where('id_pedido', $idPedido)->first();
         if ($comprobanteExistente) {
             return response()->json([
                 'success' => false,
-                'message' => 'Este pedido ya tiene un comprobante emitido.',
+                'message' => 'Este pedido ya fue procesado.',
                 'comprobante_id' => $comprobanteExistente->id_comprobante
             ], 400);
         }
-        
-        // VALIDAR QUE EL PEDIDO ESTE EN ESTADO PENDIENTE
-        if ($pedido->estado_pedido !== 'PENDIENTE') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Solo se pueden facturar pedidos en estado PENDIENTE.'
-            ], 400);
-        }
-        
-        $request->validate([
-            'tipo_comprobante' => 'required|in:factura,boleta',
-            'documento' => 'required|string',
-            'metodo_pago' => 'required|array',
-            'monto_pago' => 'required|array',
-        ]);
 
-        // VALIDAR QUE LOS MONTOS DE PAGO COINCIDAN CON EL TOTAL
+        $pedido = pedidos::with(['detalles.producto'])->findOrFail($idPedido);
+
+        // Validar métodos de pago
         $totalMontoPago = array_sum($request->monto_pago);
         if (abs($totalMontoPago - $pedido->total_pedido) > 0.01) {
             return response()->json([
@@ -128,13 +103,23 @@ class controller_facturacion extends Controller
             $subtotalSinIgv = round($pedido->total_pedido / 1.18, 2);
             $igvMonto = round($pedido->total_pedido - $subtotalSinIgv, 2);
 
-            // Crear el comprobante con TODOS los campos requeridos
+            // MODIFICADO: Obtener el nombre del cliente desde el formulario
+            $nombreCliente = $request->input('nombre_cliente', 'Cliente');
+            
+            // Si el nombre sigue siendo "Cliente", intentar construirlo desde el documento
+            if ($nombreCliente === 'Cliente' || empty(trim($nombreCliente))) {
+                $tipoDoc = $request->tipo_comprobante === 'factura' ? 'RUC' : 'DNI';
+                $numeroDoc = $request->documento ?? 'Sin documento';
+                $nombreCliente = "Cliente - {$tipoDoc}: {$numeroDoc}";
+            }
+
+            // Crear el comprobante con el nombre obtenido de la API
             $comprobante = comprobantes::create([
                 'id_pedido' => $pedido->id_pedido,
                 'id_usuario_cajero' => Auth::id(),
                 'tipo_documento_cliente' => $request->tipo_comprobante === 'factura' ? 'RUC' : 'DNI',
                 'numero_documento_cliente' => $request->documento,
-                'nombre_razon_social_cliente' => 'Cliente',
+                'nombre_razon_social_cliente' => $nombreCliente, // USAR EL NOMBRE DE LA API
                 'direccion_cliente' => null,
                 'serie_comprobante' => $request->tipo_comprobante === 'factura' ? 'F001' : 'B001',
                 'numero_correlativo_comprobante' => $this->generarCorrelativo($request->tipo_comprobante),

@@ -64,14 +64,14 @@ class controller_barra extends Controller
             $detalle = pedido_detalles::with(['pedido.mesa', 'producto'])->findOrFail($idDetalle);
             
             // Solo marcar como listo si el producto es de cocina o ambos
-            if (in_array($detalle->producto->area_destino, ['cocina', 'ambos'])) {
+            if (in_array($detalle->producto->area_destino, ['bar', 'ambos'])) {
                 $detalle->update(['estado_item' => 'LISTO_PARA_ENTREGA']);
                 
                 // Retornar información de la mesa para el mensaje de éxito
                 $mesa = $detalle->pedido->mesa->numero_mesa ?? 'N/A';
                 return response()->json(['success' => true, 'mesa' => $mesa]);
             } else {
-                return response()->json(['success' => false, 'message' => 'Este producto no corresponde al área de cocina.']);
+                return response()->json(['success' => false, 'message' => 'Este producto no corresponde al área de barra.']);
             }
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al marcar el pedido como listo: ' . $e->getMessage()]);

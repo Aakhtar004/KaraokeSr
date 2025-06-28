@@ -190,7 +190,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="formEditarUsuario" method="POST">
+                <form id="formEditarUsuario" method="POST" action="{{ url('/view_admin/admin_usuarios/0') }}">
                     @csrf
                     @method('PUT')
                     <div class="mb-3">

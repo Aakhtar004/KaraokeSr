@@ -11,25 +11,33 @@ class ApiConsultaService
     private $client;
     private $tokendni;
     private $tokenruc;
-    private $baseUri = 'https://api.apis.net.pe';
+    private $baseUriDni = 'https://api.factiliza.com/v1';
+    private $baseUriRuc = 'https://api.factiliza.com/v1';
 
     public function __construct()
     {
-        $this->tokendni = env('API_DNI_TOKEN');
+        // VERIFICAR QUE LAS VARIABLES EXISTAN EN EL .env
+        $this->tokendni = config('services.factiliza.dni_token');
         $this->tokenruc = env('API_RUC_TOKEN');
         
-        // ✨ CONFIGURACIÓN CORREGIDA DE GUZZLE
+        // LOG PARA DEBUGGING (REMOVER EN PRODUCCIÓN)
+        Log::info('ApiConsultaService initialized', [
+            'dni_token_exists' => !empty($this->tokendni),
+            'ruc_token_exists' => !empty($this->tokenruc),
+            'dni_token_preview' => $this->tokendni ? substr($this->tokendni, 0, 10) . '...' : 'NULL',
+            'ruc_token_preview' => $this->tokenruc ? substr($this->tokenruc, 0, 10) . '...' : 'NULL'
+        ]);
+        
         $this->client = new Client([
             'verify' => false,
-            'timeout' => 30,
-            'connect_timeout' => 10,
-            //'http_errors' => false
+            'timeout' => 15,
+            'connect_timeout' => 5,
             'http_errors' => true,
         ]);
     }
 
     /**
-     * Consultar datos de DNI desde la API externa
+     * Consultar datos de DNI desde la API de Factiliza (YA IMPLEMENTADO)
      */
     public function consultarDni($numeroDni)
     {
@@ -43,19 +51,19 @@ class ApiConsultaService
             }
 
             // Log para debugging
-            Log::info('Iniciando consulta DNI', [
+            Log::info('Iniciando consulta DNI con Factiliza', [
                 'dni' => $numeroDni,
-                'token' => substr($this->tokendni, 0, 10) . '...'
+                'token' => substr($this->tokendni, 0, 10) . '...',
+                'url' => $this->baseUriDni . '/dni/info/' . $numeroDni
             ]);
 
-            // Configurar parámetros para la petición HTTP
-            $response = $this->client->request('GET', $this->baseUri . '/v2/reniec/dni', [
-                'query' => ['numero' => $numeroDni],
+            // CONFIGURACIÓN PARA FACTILIZA DNI
+            $response = $this->client->request('GET', $this->baseUriDni . '/dni/info/' . $numeroDni, [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->tokendni,
                     'Accept' => 'application/json',
-                    'Referer' => 'https://apis.net.pe/api-consulta-dni',
-                    'User-Agent' => 'laravel/guzzle'
+                    'Content-Type' => 'application/json',
+                    'User-Agent' => 'Laravel-Karaoke-App/1.0'
                 ]
             ]);
 
@@ -63,28 +71,53 @@ class ApiConsultaService
             $responseBody = json_decode($response->getBody()->getContents(), true);
 
             // Log de respuesta para debugging
-            Log::info('Respuesta DNI API', [
+            Log::info('Respuesta DNI Factiliza API', [
                 'status' => $statusCode,
                 'response' => $responseBody
             ]);
 
-            // Procesar respuesta exitosa
-            if ($statusCode === 200 && isset($responseBody['nombres'])) {
+            // PROCESAR RESPUESTA DE FACTILIZA
+            if ($statusCode === 200 && isset($responseBody['success']) && $responseBody['success'] === true) {
+                $data = $responseBody['data'] ?? $responseBody;
+                
+                // Extraer datos según la estructura de Factiliza
+                $nombres = $data['nombres'] ?? $data['name'] ?? '';
+                $apellidoPaterno = $data['apellido_paterno'] ?? $data['first_surname'] ?? '';
+                $apellidoMaterno = $data['apellido_materno'] ?? $data['second_surname'] ?? '';
+                
                 return [
                     'success' => true,
                     'data' => [
-                        'dni' => $responseBody['numeroDocumento'] ?? $numeroDni,
+                        'dni' => $data['dni'] ?? $data['document_number'] ?? $numeroDni,
+                        'nombres' => $nombres,
+                        'apellido_paterno' => $apellidoPaterno,
+                        'apellido_materno' => $apellidoMaterno,
+                        'nombre_completo' => trim($nombres . ' ' . $apellidoPaterno . ' ' . $apellidoMaterno)
+                    ]
+                ];
+            } elseif ($statusCode === 200 && isset($responseBody['nombres'])) {
+                // Estructura alternativa de respuesta
+                return [
+                    'success' => true,
+                    'data' => [
+                        'dni' => $responseBody['dni'] ?? $numeroDni,
                         'nombres' => $responseBody['nombres'] ?? '',
-                        'apellido_paterno' => $responseBody['apellidoPaterno'] ?? '',
-                        'apellido_materno' => $responseBody['apellidoMaterno'] ?? '',
+                        'apellido_paterno' => $responseBody['apellido_paterno'] ?? '',
+                        'apellido_materno' => $responseBody['apellido_materno'] ?? '',
                         'nombre_completo' => trim(
                             ($responseBody['nombres'] ?? '') . ' ' . 
-                            ($responseBody['apellidoPaterno'] ?? '') . ' ' . 
-                            ($responseBody['apellidoMaterno'] ?? '')
+                            ($responseBody['apellido_paterno'] ?? '') . ' ' . 
+                            ($responseBody['apellido_materno'] ?? '')
                         )
                     ]
                 ];
             } else {
+                Log::warning('DNI no encontrado en Factiliza', [
+                    'dni' => $numeroDni,
+                    'status' => $statusCode,
+                    'response' => $responseBody
+                ]);
+
                 return [
                     'success' => false,
                     'message' => 'DNI no encontrado en RENIEC',
@@ -93,10 +126,11 @@ class ApiConsultaService
             }
 
         } catch (RequestException $e) {
-            Log::error('Error en consulta DNI', [
+            Log::error('Error de conexión en consulta DNI Factiliza', [
                 'dni' => $numeroDni,
                 'error' => $e->getMessage(),
-                'code' => $e->getCode()
+                'code' => $e->getCode(),
+                'response' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : 'No response'
             ]);
 
             return [
@@ -104,7 +138,7 @@ class ApiConsultaService
                 'message' => 'Error de conexión con el servicio de consulta DNI: ' . $e->getMessage()
             ];
         } catch (\Exception $e) {
-            Log::error('Error general en consulta DNI', [
+            Log::error('Error general en consulta DNI Factiliza', [
                 'dni' => $numeroDni,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -118,71 +152,134 @@ class ApiConsultaService
     }
 
     /**
-     * ✨ CONSULTAR DATOS DE RUC DESDE LA API EXTERNA (CORREGIDO)
+     * Consultar datos de RUC desde la API de Factiliza (CON DEBUG INTENSIVO)
      */
     public function consultarRuc($numeroRuc)
     {
+        // 🔧 DEBUGGING INICIAL
+        error_log("🟦 RUC SERVICE - INICIO - RUC: " . $numeroRuc);
+        
         try {
-            // Validar formato de RUC peruano (11 dígitos)
-            if (!$this->validarFormatoRuc($numeroRuc)) {
+            // 🔧 VERIFICAR MÉTODO EXISTS
+            if (!method_exists($this, 'validarFormatoRuc')) {
+                error_log("❌ RUC SERVICE - MÉTODO validarFormatoRuc NO EXISTE");
+                throw new \Exception("Método validarFormatoRuc no encontrado");
+            }
+            
+            error_log("🟨 RUC SERVICE - VALIDANDO FORMATO");
+            $validationResult = $this->validarFormatoRuc($numeroRuc);
+            error_log("✅ Validation result: " . ($validationResult ? 'VÁLIDO' : 'INVÁLIDO'));
+
+            if (!$validationResult) {
+                error_log("⚠️ RUC SERVICE - FORMATO INVALIDO");
                 return [
                     'success' => false,
                     'message' => 'Formato de RUC inválido. Debe tener exactamente 11 dígitos y empezar con 10 o 20.'
                 ];
             }
 
-            // Log para debugging
-            Log::info('Iniciando consulta RUC', [
-                'ruc' => $numeroRuc,
-                'token' => substr($this->tokenruc, 0, 10) . '...',
-                'url' => $this->baseUri . '/v2/sunat/ruc'
-            ]);
+            // 🔧 VERIFICAR TOKENS
+            error_log("🟪 RUC SERVICE - VERIFICANDO TOKENS");
+            error_log("🔑 Token RUC: " . (empty($this->tokenruc) ? 'VACÍO' : 'EXISTE'));
+            
+            if (empty($this->tokenruc)) {
+                error_log("❌ RUC SERVICE - TOKEN VACÍO");
+                return [
+                    'success' => false,
+                    'message' => 'Token de API no configurado para consultas RUC.'
+                ];
+            }
 
-            // ✨ REALIZAR PETICIÓN CON CONFIGURACIÓN CORREGIDA
-            $response = $this->client->request('GET', $this->baseUri . '/v2/sunat/ruc', [
-                'query' => ['numero' => $numeroRuc],
+            // 🔧 VERIFICAR CLIENTE GUZZLE
+            if (!$this->client) {
+                error_log("❌ RUC SERVICE - CLIENTE GUZZLE NO INICIALIZADO");
+                throw new \Exception("Cliente HTTP no inicializado");
+            }
+
+            $url = $this->baseUriRuc . '/ruc/info/' . $numeroRuc;
+            error_log("🚀 RUC SERVICE - URL: " . $url);
+
+            // 🔧 DEBUGGING ANTES DE LA PETICIÓN
+            error_log("📡 RUC SERVICE - HACIENDO PETICION HTTP");
+            error_log("🔧 Client type: " . get_class($this->client));
+            error_log("🔧 Token preview: " . substr($this->tokenruc, 0, 15) . "...");
+            
+            $response = $this->client->request('GET', $url, [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->tokenruc,
                     'Accept' => 'application/json',
-                    'Referer' => 'https://apis.net.pe/api-consulta-ruc',
-                    'User-Agent' => 'laravel/guzzle'
-                ]
+                    'Content-Type' => 'application/json',
+                    'User-Agent' => 'Laravel-Karaoke-App/1.0'
+                ],
+                'timeout' => 30,
+                'connect_timeout' => 10
             ]);
+
+            error_log("✅ RUC SERVICE - PETICIÓN COMPLETADA");
 
             $statusCode = $response->getStatusCode();
-            $responseBody = json_decode($response->getBody()->getContents(), true);
+            $responseContent = $response->getBody()->getContents();
+            
+            error_log("📊 Status code: " . $statusCode);
+            error_log("📏 Response size: " . strlen($responseContent) . " bytes");
+            
+            $responseBody = json_decode($responseContent, true);
+            
+            error_log("🔍 JSON valid: " . (json_last_error() === JSON_ERROR_NONE ? 'SÍ' : 'NO'));
+            error_log("❓ JSON error: " . json_last_error_msg());
 
-            // Log detallado para debugging
-            Log::info('Respuesta RUC API', [
-                'status' => $statusCode,
-                'response' => $responseBody
-            ]);
+            // 🔧 VERIFICAR ESTRUCTURA DE RESPUESTA
+            if (!is_array($responseBody)) {
+                error_log("❌ RUC SERVICE - RESPUESTA NO ES ARRAY");
+                error_log("📄 Raw response: " . $responseContent);
+                throw new \Exception("Respuesta de API no es JSON válido");
+            }
 
-            // ✨ PROCESAR RESPUESTA EXITOSA
-            if ($statusCode === 200 && isset($responseBody['razonSocial'])) {
-                return [
+            error_log("🔑 Response keys: " . implode(', ', array_keys($responseBody)));
+            error_log("✅ Has success key: " . (isset($responseBody['success']) ? 'SÍ' : 'NO'));
+            error_log("✅ Success value: " . ($responseBody['success'] ?? 'NO_KEY'));
+
+            // ✅ PROCESAR RESPUESTA
+            $successValue = $responseBody['success'] ?? false;
+            $isSuccess = ($successValue === true || $successValue === 1 || $successValue === "1");
+            
+            if ($statusCode === 200 && isset($responseBody['success']) && $isSuccess) {
+                error_log("🟩 RUC SERVICE - RESPUESTA EXITOSA");
+                
+                $data = $responseBody['data'] ?? $responseBody;
+                
+                if (!is_array($data)) {
+                    error_log("❌ RUC SERVICE - DATA NO ES ARRAY");
+                    throw new \Exception("Estructura de datos inválida en respuesta");
+                }
+                
+                $razonSocial = $data['nombre_o_razon_social'] ?? '';
+                $direccionCompleta = $data['direccion_completa'] ?? $data['direccion'] ?? '';
+                
+                $resultado = [
                     'success' => true,
                     'data' => [
-                        'ruc' => $responseBody['numeroDocumento'] ?? $numeroRuc,
-                        'razon_social' => $responseBody['razonSocial'] ?? '',
-                        'nombre_comercial' => $responseBody['nombreComercial'] ?? '',
-                        'direccion' => $responseBody['direccion'] ?? '',
-                        'estado' => $responseBody['estado'] ?? '',
-                        'condicion' => $responseBody['condicion'] ?? '',
-                        'tipo_empresa' => $responseBody['tipo'] ?? '',
-                        'ubigeo' => $responseBody['ubigeo'] ?? '',
-                        'distrito' => $responseBody['distrito'] ?? '',
-                        'provincia' => $responseBody['provincia'] ?? '',
-                        'departamento' => $responseBody['departamento'] ?? ''
+                        'ruc' => $data['numero'] ?? $numeroRuc,
+                        'razon_social' => $razonSocial,
+                        'nombre_comercial' => '',
+                        'direccion' => $direccionCompleta,
+                        'estado' => $data['estado'] ?? '',
+                        'condicion' => $data['condicion'] ?? '',
+                        'tipo_empresa' => $data['tipo_contribuyente'] ?? '',
+                        'ubigeo' => $data['ubigeo_sunat'] ?? '',
+                        'distrito' => $data['distrito'] ?? '',
+                        'provincia' => $data['provincia'] ?? '',
+                        'departamento' => $data['departamento'] ?? ''
                     ]
                 ];
+                
+                error_log("✅ RUC SERVICE - RESULTADO GENERADO CORRECTAMENTE");
+                return $resultado;
+                
             } else {
-                Log::warning('RUC no encontrado o respuesta inválida', [
-                    'ruc' => $numeroRuc,
-                    'status' => $statusCode,
-                    'response' => $responseBody
-                ]);
-
+                error_log("⚠️ RUC SERVICE - RUC NO ENCONTRADO O CONDICIONES NO CUMPLIDAS");
+                error_log("📄 Full response: " . $responseContent);
+                
                 return [
                     'success' => false,
                     'message' => 'RUC no encontrado en SUNAT',
@@ -190,24 +287,28 @@ class ApiConsultaService
                 ];
             }
 
-        } catch (RequestException $e) {
-            Log::error('Error de conexión en consulta RUC', [
-                'ruc' => $numeroRuc,
-                'error' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'response' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : 'No response'
-            ]);
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            error_log("🔴 RUC SERVICE - GUZZLE REQUEST EXCEPTION");
+            error_log("❌ Error message: " . $e->getMessage());
+            error_log("❌ Error code: " . $e->getCode());
+            
+            if ($e->hasResponse()) {
+                error_log("❌ Response status: " . $e->getResponse()->getStatusCode());
+                error_log("❌ Response body: " . $e->getResponse()->getBody()->getContents());
+            }
 
             return [
                 'success' => false,
                 'message' => 'Error de conexión con el servicio de consulta RUC: ' . $e->getMessage()
             ];
+            
         } catch (\Exception $e) {
-            Log::error('Error general en consulta RUC', [
-                'ruc' => $numeroRuc,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            error_log("🔴 RUC SERVICE - EXCEPTION GENERAL");
+            error_log("❌ Error message: " . $e->getMessage());
+            error_log("❌ Error class: " . get_class($e));
+            error_log("❌ Error file: " . $e->getFile());
+            error_log("❌ Error line: " . $e->getLine());
+            error_log("❌ Stack trace: " . $e->getTraceAsString());
 
             return [
                 'success' => false,
@@ -231,4 +332,5 @@ class ApiConsultaService
     {
         return preg_match('/^(10|20)[0-9]{9}$/', $ruc);
     }
+
 }
