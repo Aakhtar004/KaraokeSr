@@ -8,18 +8,27 @@ use App\Models\categorias_producto;
 use App\Models\promociones;
 
 
-class CartaDigitalController extends Controller
+class controller_cartadigital extends Controller
 {
     public function index()
     {
-        $categoriasCartaShow = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
-        
-        // Obtener solo las categorías específicas para meseros
+        $categoriasCartaShow = [
+            'Piqueos',
+            'Cocteles',
+            'Licores',
+            'Bebidas',
+            'Cervezas',
+            'Jarras'
+            //Balde retirado momentaneamente
+        ];
+
         $categorias = categorias_producto::whereIn('nombre', $categoriasCartaShow)
             ->whereHas('productos', function($query) {
                 $query->where('estado', 1);
             })
-            ->orderBy('nombre')
+            ->orderByRaw(
+                "FIELD(nombre, ".implode(',', array_map(fn($n) => "'{$n}'", $categoriasCartaShow)).")"
+            )
             ->get();
 
         // Obtener productos activos agrupados por categoría
@@ -46,16 +55,17 @@ class CartaDigitalController extends Controller
             }
         }
 
+        $hoy = now()->toDateString(); // Solo la fecha, sin hora
+
         // Obtener promociones activas
         $promocionesActivas = promociones::with(['productos.producto'])
             ->where('estado_promocion', 'activa')
-            ->where('fecha_inicio', '<=', now())
-            ->where('fecha_fin', '>=', now())
-            ->where('stock_promocion', '>', 0)
+            ->whereDate('fecha_inicio', '<=', $hoy)
+            ->whereDate('fecha_fin', '>=', $hoy)
             ->orderBy('nombre_promocion')
             ->get();
 
-        // NUEVO: Crear array de productos individuales con promociones
+        // Creacion de array de productos individuales con promociones
         $productosConPromocion = [];
         foreach ($promocionesActivas as $promocion) {
             foreach ($promocion->productos as $promoProducto) {
@@ -76,43 +86,36 @@ class CartaDigitalController extends Controller
         // Procesar promociones para la carta (promociones completas)
         $promocionesParaCarta = [];
         foreach ($promocionesActivas as $promocion) {
-            // Verificar que todos los productos tengan stock
-            $todosConStock = true;
-            $stockMinimo = $promocion->stock_promocion;
-            
+            $productosIncluidos = [];
+            $productosAgotados = 0;
+
             foreach ($promocion->productos as $promoProducto) {
-                if (!$promoProducto->producto || $promoProducto->producto->estado != 1) {
-                    $todosConStock = false;
-                    break;
-                }
-                
-                // NUEVA LÓGICA: Aplicar diferenciación para cocteles en promociones
-                if (isset($promoProducto->producto->categoria) && $promoProducto->producto->categoria->nombre === 'Cocteles') {
-                    // Para cocteles: solo verificar estado
-                    if ($promoProducto->producto->estado != 1) {
-                        $todosConStock = false;
-                        break;
-                    }
-                } else {
-                    // Para otros productos: verificar stock
-                    $stockMinimo = min($stockMinimo, $promoProducto->producto->stock);
-                    if ($promoProducto->producto->stock <= 0) {
-                        $todosConStock = false;
-                        break;
-                    }
+                if ($promoProducto->producto && $promoProducto->producto->estado == 1) {
+                    $stock = $promoProducto->producto->stock;
+                    $agotado = $stock <= 0;
+                    if ($agotado) $productosAgotados++;
+
+                    $productosIncluidos[] = [
+                        'nombre' => $promoProducto->producto->nombre,
+                        'precio_original' => $promoProducto->precio_original_referencia,
+                        'precio_promocional' => $this->calcularPrecioPromocional($promoProducto->precio_original_referencia, $promocion->descripcion_promocion),
+                        'unidad_medida' => $promoProducto->producto->unidad_medida ?? '',
+                        'stock' => $stock,
+                        'agotado' => $agotado,
+                    ];
                 }
             }
-            
-            if (!$todosConStock || $promocion->productos->isEmpty()) {
-                continue;
+
+            // Solo mostrar la promoción si al menos un producto tiene stock
+            if (count($productosIncluidos) === 0 || $productosAgotados === count($productosIncluidos)) {
+                continue; // No mostrar la promoción si todos los productos están agotados o no hay productos válidos
             }
-            
-            // Calcular precios
-            $precioOriginal = $promocion->productos->sum('precio_original_referencia');
+
+            $precioOriginal = array_sum(array_column($productosIncluidos, 'precio_original'));
             $porcentajeDescuento = 0;
-            
             if ($precioOriginal > 0) {
-                $porcentajeDescuento = round((($precioOriginal - $promocion->precio_promocion) / $precioOriginal) * 100);
+                $precioPromocion = array_sum(array_column($productosIncluidos, 'precio_promocional'));
+                $porcentajeDescuento = round((($precioOriginal - $precioPromocion) / $precioOriginal) * 100);
             }
 
             // Badge de promoción
@@ -127,14 +130,11 @@ class CartaDigitalController extends Controller
                 'id_producto' => "promo_{$promocion->id_promocion}",
                 'nombre' => $promocion->nombre_promocion,
                 'descripcion' => $promocion->descripcion_promocion,
-                'precio_unitario' => $promocion->precio_promocion,
-                'precio_original' => $precioOriginal,
-                'stock' => $stockMinimo,
+                'productos_incluidos' => $productosIncluidos,
+                'agotada' => false, // la promoción no se muestra si todos están agotados
                 'imagen_url' => $promocion->imagen_url_promocion,
-                'unidad_medida' => 'promoción',
                 'promo_badge' => $promoBadge,
                 'es_promocion' => true,
-                'productos_incluidos' => $promocion->productos->pluck('producto.nombre')->filter()->toArray(),
                 'porcentaje_descuento' => $porcentajeDescuento
             ];
 
@@ -159,10 +159,35 @@ class CartaDigitalController extends Controller
             'No comestibles' => 'fas fa-tools'
         ];
 
+        foreach ($productosPorCategoria as $categoriaNombre => &$productos) {
+            foreach ($productos as &$producto) {
+                $producto->en_promocion = false;
+                $producto->precio_promocion = null;
+                $producto->porcentaje_descuento = 0;
+                // Buscar si el producto está en alguna promoción activa
+                foreach ($promocionesActivas as $promocion) {
+                    foreach ($promocion->productos as $promoProducto) {
+                        if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                            // Calcular el precio promocional individual
+                            $precioOriginal = $promoProducto->precio_original_referencia;
+                            $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                            $porcentajeDescuento = $this->calcularPorcentajeDescuento($precioOriginal, $promocion->descripcion_promocion);
+
+                            $producto->en_promocion = true;
+                            $producto->precio_promocion = $precioPromocional;
+                            $producto->porcentaje_descuento = $porcentajeDescuento;
+                            $producto->precio_original = $precioOriginal; // Para mostrar el tachado si aplica
+                            break 2; // Salir de ambos foreach
+                        }
+                    }
+                }
+            }
+        }
+
         return view('carta_digital', compact('categorias', 'productosPorCategoria', 'promocionesParaCarta', 'iconos'));
     }
 
-    // NUEVO: Función para calcular precio promocional individual
+    //  Función para calcular precio promocional individual
     private function calcularPrecioPromocional($precioOriginal, $descripcionPromocion)
     {
         if (stripos($descripcionPromocion, '10%') !== false) {
@@ -175,7 +200,7 @@ class CartaDigitalController extends Controller
         return $precioOriginal;
     }
 
-    // NUEVO: Función para calcular porcentaje de descuento
+    // Función para calcular porcentaje de descuento
     private function calcularPorcentajeDescuento($precioOriginal, $descripcionPromocion)
     {
         $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $descripcionPromocion);
@@ -185,7 +210,7 @@ class CartaDigitalController extends Controller
         return 0;
     }
 
-    // NUEVO: Función para detectar tipo de promoción
+    // Función para detectar tipo de promoción
     private function detectarTipoPromocion($descripcion)
     {
         if (stripos($descripcion, '2x1') !== false) {

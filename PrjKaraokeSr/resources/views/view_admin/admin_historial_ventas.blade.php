@@ -53,15 +53,14 @@
             $pedidosAgrupados = $pedidos->groupBy(function($pedido) {
                 return $pedido->fecha_hora_pedido->format('Y-m-d');
             });
-            
-            // NUEVO: Calcular estadísticas generales
+
             $totalPedidos = $pedidos->count();
             $totalVentas = $pedidos->sum('total_pedido');
             $pedidosConComprobante = $pedidos->whereNotNull('comprobante')->count();
             $pedidosInconclusos = $totalPedidos - $pedidosConComprobante;
         @endphp
         
-        <!-- NUEVO: Estadísticas resumidas -->
+        <!--  Estadísticas resumidas -->
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card text-center bg-primary text-white">
@@ -119,7 +118,7 @@
                                     <small>S/ {{ number_format($pedido->total_pedido, 2) }}</small><br>
                                     <small class="text-muted">{{ $pedido->fecha_hora_pedido->format('H:i') }}</small>
                                     
-                                    <!-- NUEVO: Estado del comprobante -->
+                                    <!--  Estado del comprobante -->
                                     @if($pedido->comprobante)
                                         <span class="badge bg-success position-absolute top-0 end-0 m-1">FACTURADO</span>
                                     @else

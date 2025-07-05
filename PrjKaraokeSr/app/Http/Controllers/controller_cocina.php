@@ -221,7 +221,7 @@ class controller_cocina extends Controller
         return back()->with('error', 'Acción no válida. Use el modal para confirmar.');
     }
 
-    // Nuevo endpoint para verificar estado vía AJAX
+    //  endpoint para verificar estado vía AJAX
     public function verificar_estado_inventario(Request $request)
     {
         $ids = $request->input('productos', []);

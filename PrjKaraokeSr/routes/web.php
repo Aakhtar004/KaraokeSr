@@ -16,8 +16,7 @@ use App\Http\Controllers\Auth\controller_login;
 // Import the DNI and RUC controller
 use App\Http\Controllers\Api\controller_api;
 
-use App\Http\Controllers\CartaDigitalController;
-
+use App\Http\Controllers\controller_cartadigital;
 
 Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
     // Ruta para todos los usuarios
@@ -36,7 +35,7 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         Route::get('/view_admin/admin_historial_ventas', [controller_admin::class, 'ver_admin_historial_ventas'])->name('vista.admin_historial_ventas');
         Route::get('/view_admin/admin_historial_ventas/filtrar', [controller_admin::class, 'filtrar_historial_pedidos'])->name('admin.filtrar_historial');
         Route::get('/view_admin/admin_historial_ventas/detalle/{fecha}', [controller_admin::class, 'ver_detalle_pedido'])->name('admin.detalle_pedido');
-        // NUEVA RUTA: Ver comprobante desde admin
+        // Ver comprobante desde admin
         Route::get('/admin/comprobante/{id}', [controller_admin::class, 'ver_comprobante_admin'])->name('admin.ver_comprobante');
 
         Route::get('/view_admin/admin_compras', [controller_admin::class, 'ver_admin_compras'])->name('vista.admin_compras');
@@ -88,9 +87,11 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
     Route::middleware(['midctu:bartender'])->group(function () {
         Route::get('/view_barra/barra_historial', [controller_barra::class, 'ver_barra_historial'])->name('vista.barra_historial');
         Route::get('/view_barra/barra_inventario', [controller_barra::class, 'ver_barra_inventario'])->name('vista.barra_inventario');
+
         Route::post('/barra/pedido/{detalle}/listo', [controller_barra::class, 'marcarPedidoListo'])->name('barra.pedido.listo');
 
         Route::post('/barra/inventario/pedido', [controller_barra::class, 'pedido_barra_inventario'])->name('barra.inventario.pedido');
+        
         Route::post('/barra/inventario/verificar', [controller_barra::class, 'verificar_estado_inventario'])->name('barra.inventario.verificar');
         
     });
@@ -118,7 +119,10 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         Route::post('/pedidos/{pedido}/facturar', [controller_facturacion::class, 'procesar_facturacion'])->name('pedidos.procesar_facturacion');
         Route::post('/factura/{comprobante}/enviar-correo', [controller_facturacion::class, 'enviar_correo_form'])->name('factura.enviar_correo_form');
         Route::post('/factura/{comprobante}/enviar', [controller_facturacion::class, 'enviar_correo'])->name('factura.enviar_correo');
-        Route::get('/factura/{comprobante}/vista-previa', [controller_facturacion::class, 'vista_previa_pdf'])->name('factura.vista_previa');
+
+
+        Route::get('/factura/{comprobante}/vista-previa', [controller_facturacion::class, 'vistaPrevia'])->name('factura.vista_previa');
+
     });
 });
 
@@ -127,12 +131,12 @@ Route::get('/login', [controller_login::class, 'showLoginForm'])->name('login');
 Route::post('/verificarlogin', [controller_login::class, 'login'])->name('verificar.login');
 Route::post('/logout', [controller_login::class, 'logout'])->name('logout');
 
-// Ruta raíz (FUERA del middleware)
+// Ruta login
 Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
 // Ruta de la carta (públicamente accesible)
-Route::get('/carta', [CartaDigitalController::class, 'index']);
+Route::get('/carta', [controller_cartadigital::class, 'index']);
 
 

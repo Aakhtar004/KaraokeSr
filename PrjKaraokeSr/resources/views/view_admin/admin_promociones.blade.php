@@ -45,7 +45,7 @@
                                     <h5 class="card-title text-primary fw-bold">{{ $promocion->nombre_promocion }}</h5>
                                     <p class="card-text mb-2">
                                         <span class="badge bg-secondary me-2">{{ $promocion->descripcion_promocion }}</span>
-                                        <span class="text-success fw-bold fs-5">S/ {{ number_format($promocion->precio_promocion, 2) }}</span>
+                                        
                                     </p>
                                     <div class="mb-2">
                                         <small class="text-muted">
@@ -53,19 +53,32 @@
                                             {{ \Carbon\Carbon::parse($promocion->fecha_inicio)->format('d/m/Y') }} - 
                                             {{ \Carbon\Carbon::parse($promocion->fecha_fin)->format('d/m/Y') }}
                                         </small>
-                                        <small class="text-muted ms-3">
-                                            <i class="fas fa-box me-1"></i>
-                                            Stock: {{ $promocion->stock_promocion ?? 0 }}
-                                        </small>
+                                       
                                     </div>
-                                    <div class="mt-2">
-                                        <strong class="text-dark">Productos incluidos:</strong>
-                                        <div class="mt-1">
+                                    
+                                    {{-- Mostrar productos incluidos con precios --}}
+                                    @if($promocion->productos && count($promocion->productos) > 0)
+                                        <div class="mb-2">
+                                            <strong>Incluye:</strong>
+                                            {{ implode(', ', array_map(fn($p) => $p->producto->nombre, $promocion->productos->take(3)->all())) }}
+                                            @if($promocion->productos->count() > 3)
+                                                <span class="text-danger"> y {{ $promocion->productos->count() - 3 }} más</span>
+                                            @endif
+                                        </div>
+                                        <div class="flex flex-column gap-2 mt-2">
                                             @foreach($promocion->productos as $promoProducto)
-                                                <span class="badge bg-light text-dark border me-1 mb-1">{{ $promoProducto->producto->nombre }}</span>
+                                                <div>
+                                                    <span>{{ $promoProducto->producto->nombre }}</span>
+                                                    <span class="text-muted text-decoration-line-through small">
+                                                        S/ {{ number_format($promoProducto->precio_original, 2) }}
+                                                    </span>
+                                                    <span class="badge bg-danger text-white fw-bold">
+                                                        S/ {{ number_format($promoProducto->precio_promocional, 2) }}
+                                                    </span>
+                                                </div>
                                             @endforeach
                                         </div>
-                                    </div>
+                                    @endif
                                 </div>
                                 <div class="d-flex flex-column align-items-end gap-2">
                                     <!-- Botones de acción -->
@@ -138,10 +151,7 @@
                                 <option value="50%descuento">50% de descuento</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label for="stockPromocion" class="form-label">Stock Disponible *</label>
-                            <input type="number" class="form-control" id="stockPromocion" name="stock_promocion" min="1" max="999" required>
-                        </div>
+                        
                     </div>
 
                     <!-- Fechas -->
@@ -156,7 +166,7 @@
                         </div>
                     </div>
                     
-                    <!-- NUEVO CAMPO: URL de Imagen -->
+                    <!-- CAMPO: URL de Imagen -->
                     <div class="mb-3">
                         <label for="imagenUrlPromocion" class="form-label">URL de Imagen de la Promoción</label>
                         <div class="input-group">
@@ -318,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fechaInicio').addEventListener('change', validarFechas);
     document.getElementById('fechaFin').addEventListener('change', validarFechas);
     
-    // ✅ NUEVO: Event listener para vista previa de imagen
+    // Event listener para vista previa de imagen
     document.getElementById('imagenUrlPromocion').addEventListener('input', function() {
         mostrarVistaPrevia(this.value);
     });
@@ -383,11 +393,11 @@ function editarPromocion(promocionId) {
             
             document.getElementById('promocionId').value = promocion.id_promocion;
             document.getElementById('nombrePromocion').value = promocion.nombre_promocion;
-            document.getElementById('stockPromocion').value = promocion.stock_promocion;
+            
             document.getElementById('fechaInicio').value = promocion.fecha_inicio;
             document.getElementById('fechaFin').value = promocion.fecha_fin;
             
-            // ✅ CARGAR URL DE IMAGEN
+            // CARGAR URL DE IMAGEN
             const imagenUrl = promocion.imagen_url_promocion || '';
             document.getElementById('imagenUrlPromocion').value = imagenUrl;
             if (imagenUrl) {
@@ -479,7 +489,7 @@ function cargarProductosEnModal() {
             
             const isSelected = productosSeleccionadosTemp.includes(producto.id_producto);
             
-            // ✅ NUEVA LÓGICA: Determinar información de stock según categoría
+            // Determinar información de stock según categoría
             let stockInfo = '';
             let stockBadge = '';
             
@@ -515,7 +525,7 @@ function cargarProductosEnModal() {
                         <small class="text-success fw-bold">S/ ${parseFloat(producto.precio_unitario).toFixed(2)}</small>
                     </div>
                     
-                    <!-- ✅ MOSTRAR STOCK DEBAJO DEL NOMBRE -->
+                    <!-- MOSTRAR STOCK DEBAJO DEL NOMBRE -->
                     <div class="mb-2">
                         ${stockBadge}
                     </div>

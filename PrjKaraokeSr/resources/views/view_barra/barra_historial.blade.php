@@ -204,8 +204,8 @@ function mostrarModalExito(mensaje) {
 function marcarPedidoListo() {
     if (!pedidoDetalleIdActual) return;
 
-    const baseUrl = window.location.origin + '/PrjKaraokeSr/public';
-    const url = `${baseUrl}/barra/pedido/${pedidoDetalleIdActual}/listo`;
+    // CORRECCIÓN: Usar la helper route() de Laravel correctamente con el parámetro
+    const url = "{{ route('barra.pedido.listo', ':detalle') }}".replace(':detalle', pedidoDetalleIdActual);
     
     console.log('URL construida:', url);
 

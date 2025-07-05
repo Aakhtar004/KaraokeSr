@@ -17,87 +17,98 @@
 </div>
 
 <div class="container d-flex flex-column align-items-center justify-content-center" style="min-height: 80vh;">
-    <form id="facturacionForm" action="{{ route('pedidos.procesar_facturacion', $pedido->id_pedido) }}" method="POST" class="w-100" style="max-width: 400px;">
+    <form id="facturacionForm" action="{{ route('pedidos.procesar_facturacion', $pedido->id_pedido) }}" method="POST" class="w-100" style="max-width: 600px;">
         @csrf
 
-        <!-- Información del pedido -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <h6>Mesa: {{ $pedido->mesa->numero_mesa }}</h6>
-                <h6>Total: S/ {{ number_format($pedido->total_pedido, 2) }}</h6>
+        <!-- Botón Dividir Cuenta -->
+        <div class="mb-3 text-center">
+            <button type="button" class="btn btn-outline-primary" id="toggleDividirCuenta">
+                <i class="fas fa-columns"></i> Dividir Cuenta
+            </button>
+        </div>
+
+        <div id="formSinDivision">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6>Mesa: {{ $pedido->mesa->numero_mesa }}</h6>
+                    <h6>Total: S/ {{ number_format($pedido->total_pedido, 2) }}</h6>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tipo de comprobante</label>
+                <select class="form-select" name="tipo_comprobante" id="tipo_comprobante" required>
+                    <option value="boleta">Boleta</option>
+                    <option value="nota_venta">Nota de Venta</option>
+                </select>
+            </div>
+            <div class="mb-3" id="campoDocumentoContainer">
+                <label id="labelDocumento" class="form-label">Boleta</label>
+                <div class="input-group mb-2">
+                    <span class="input-group-text" id="tipoDoc">DNI</span>
+                    <input type="text" class="form-control" id="documento" name="documento" placeholder="Ingrese DNI">
+                    <button class="btn btn-outline-secondary" type="button" id="consultarBtn">
+                        <i class="bi bi-search"></i> Consultar
+                    </button>
+                </div>
+                <div id="resultadoConsulta" style="display:none;">
+                    <span>Nombre: <span id="nombreCompleto"></span></span>
+                </div>
+                <input type="text" class="form-control mt-2" id="nombre_cliente" name="nombre_cliente" placeholder="Nombre del cliente" required>
+                <div id="infoRuc" style="display:none;" class="mt-2">
+                    <div><strong>Dirección:</strong> <span id="direccionEmpresa"></span></div>
+                    <div><strong>Estado:</strong> <span id="estadoEmpresa"></span></div>
+                    <div><strong>Condición:</strong> <span id="condicionEmpresa"></span></div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Método de pago</label>
+                <select class="form-select" name="metodo_pago[]" required>
+                    <option value="">Seleccione</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                    <option value="yape">Yape</option>
+                    <option value="plin">Plin</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Monto</label>
+                <input type="number" class="form-control" name="monto_pago[]" value="{{ $pedido->total_pedido }}" readonly>
             </div>
         </div>
 
-        <!-- Tipo de comprobante -->
-        <div class="mb-3">
-            <label class="form-label">Tipo de comprobante</label>
-            <select class="form-select" name="tipo_comprobante" id="tipo_comprobante" required>
-                <option value="boleta">Boleta</option>
-                <option value="factura">Factura</option>
-            </select>
-        </div>
-
-        <!-- RUC o DNI con botón de consulta -->
-        <div class="mb-3">
-            <label class="form-label mb-0" id="labelDocumento" for="documento">Boleta</label>
-            <span class="text-danger" id="tipoDoc">DNI</span>
-            <div class="input-group">
-                <input type="text" class="form-control" name="documento" id="documento" placeholder="Ingrese DNI" required>
-                <!-- BOTÓN PARA CONSULTAR DNI/RUC -->
-                <button type="button" class="btn btn-outline-primary" id="consultarBtn">
-                    <i class="bi bi-search"></i> Consultar
-                </button>
-            </div>
-            <!-- ÁREA PARA MOSTRAR RESULTADO DE LA CONSULTA -->
-            <div id="resultadoConsulta" class="mt-2" style="display: none;">
-                <small class="text-success">
-                    <i class="bi bi-check-circle"></i>
-                    <span id="nombreCompleto"></span>
-                </small>
-                <!-- INFORMACIÓN ADICIONAL PARA RUC -->
-                <div id="infoRuc" style="display: none;">
-                    <small class="text-muted d-block">
-                        <i class="bi bi-building"></i>
-                        <span id="direccionEmpresa"></span>
-                    </small>
-                    <small class="text-muted d-block">
-                        <i class="bi bi-info-circle"></i>
-                        Estado: <span id="estadoEmpresa"></span> | 
-                        Condición: <span id="condicionEmpresa"></span>
-                    </small>
+        <div id="formDivision" style="display:none;">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6>Mesa: {{ $pedido->mesa->numero_mesa }}</h6>
+                    <h6>Total: S/ {{ number_format($pedido->total_pedido, 2) }}</h6>
                 </div>
             </div>
-        </div>
-
-        <!-- CAMPO OCULTO PARA EL NOMBRE DEL CLIENTE -->
-        <input type="hidden" name="nombre_cliente" id="nombre_cliente" value="Cliente">
-
-        <!-- Métodos de pago -->
-        <div class="mb-3">
-            <label class="form-label">Método de pago</label>
-            <div class="row g-2 align-items-center" id="metodoPagoContainer">
-                <div class="col-1 d-flex justify-content-center align-items-center">
-                    <button type="button" class="btn btn-outline-dark btn-sm" id="addMetodoPago" title="Agregar método de pago">+</button>
+            <div class="mb-3">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="modoDivision" id="divisionPorItem" value="item" checked>
+                    <label class="form-check-label" for="divisionPorItem">Dividir por ítem</label>
                 </div>
-                <div class="col">
-                    <select class="form-select mb-2" name="metodo_pago[]" required>
-                        <option value="">Seleccione</option>
-                        <option value="efectivo">Efectivo</option>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="yape">Yape</option>
-                        <option value="plin">Plin</option>
-                    </select>
-                </div>
-                <div class="col">
-                    <input type="number" class="form-control mb-2 monto-pago" name="monto_pago[]" placeholder="Monto" min="0" step="0.01" value="{{ $pedido->total_pedido }}" required>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="modoDivision" id="divisionPorMonto" value="monto">
+                    <label class="form-check-label" for="divisionPorMonto">Dividir por monto</label>
                 </div>
             </div>
-            <div id="metodosPagoExtras"></div>
+            <div class="mb-3">
+                <label class="form-label">¿En cuántas cuentas se divide?</label>
+                <input type="number" min="2" max="10" class="form-control" id="numCuentas" name="num_cuentas" value="2" required>
+            </div>
+            <div class="mb-3 text-center">
+                <button type="button" class="btn btn-primary" id="generarDivisionesBtn" disabled>Generar divisiones</button>
+            </div>
+            <div id="bloquesDivision"></div>
+            <div id="tablaDivisionItemsContainer" style="display:none;" class="mt-3"></div>
+            <div id="resumenDivision" class="mt-3"></div>
         </div>
 
-        <!-- Confirmar -->
-        <div class="d-grid">
-            <button type="submit" class="btn btn-dark">Confirmar</button>
+        <input type="hidden" name="division" id="inputDivision" value="0">
+
+        <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-dark" id="btnConfirmar" disabled>Confirmar</button>
         </div>
     </form>
 </div>
@@ -131,41 +142,84 @@
     </div>
 </div>
 
-<script>
-let comprobanteId = null;
+<!-- Modal de éxito comprobante generado -->
+<div class="modal fade" id="modalExitoComprobante" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">¡Éxito!</h5>
+            </div>
+            <div class="modal-body">
+                <p>Comprobante generado correctamente.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btnAceptarExito" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
+<span id="productosPedidoData" data-productos='@json($productosPedido)'></span>
+
+<script>
+const productosPedido = JSON.parse(document.getElementById('productosPedidoData').dataset.productos);
+
+let comprobanteId = null;
 // Esperamos a que el DOM esté completamente cargado para que el script funcione correctamente
 // Esto asegura que todos los elementos del DOM estén disponibles para manipulación
 // Usamos 'DOMContentLoaded' para evitar problemas de carga asíncrona
 // y asegurarnos de que el script se ejecute después de que el HTML esté completamente cargados
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // Cambiar etiquetas según tipo de comprobante
     const tipoComprobanteSelect = document.getElementById('tipo_comprobante');
+    const labelDocumento = document.getElementById('labelDocumento');
+    const tipoDoc = document.getElementById('tipoDoc');
+    const documento = document.getElementById('documento');
+    const consultarBtn = document.getElementById('consultarBtn');
+    const resultadoConsulta = document.getElementById('resultadoConsulta');
+    const infoRuc = document.getElementById('infoRuc');
+    const nombreCliente = document.getElementById('nombre_cliente');
+    const grupoDni = tipoDoc ? tipoDoc.closest('.input-group') : null; // Agrupa el input y botón
+
     if (tipoComprobanteSelect) {
         tipoComprobanteSelect.addEventListener('change', function() {
             const tipo = this.value;
-            const labelDocumento = document.getElementById('labelDocumento');
-            const tipoDoc = document.getElementById('tipoDoc');
-            const documento = document.getElementById('documento');
-            const resultadoConsulta = document.getElementById('resultadoConsulta');
-            const infoRuc = document.getElementById('infoRuc');
-            const nombreCliente = document.getElementById('nombre_cliente');
-            
-            // Verificar que los elementos existen antes de usarlos
-            if (labelDocumento) labelDocumento.textContent = tipo === 'factura' ? 'Factura' : 'Boleta';
-            if (tipoDoc) tipoDoc.textContent = tipo === 'factura' ? 'RUC' : 'DNI';
-            if (documento) documento.placeholder = tipo === 'factura' ? 'Ingrese RUC' : 'Ingrese DNI';
-            
-            // Limpiar resultado anterior al cambiar tipo
-            if (resultadoConsulta) resultadoConsulta.style.display = 'none';
-            if (infoRuc) infoRuc.style.display = 'none';
-            if (nombreCliente) nombreCliente.value = 'Cliente';
+
+            if (tipo === 'nota_venta') {
+                // Ocultar grupo DNI y botón consultar
+                if (grupoDni) grupoDni.style.display = 'none';
+                if (resultadoConsulta) resultadoConsulta.style.display = 'none';
+                if (infoRuc) infoRuc.style.display = 'none';
+                if (nombreCliente) {
+                    nombreCliente.value = '';
+                    nombreCliente.readOnly = false;
+                    nombreCliente.placeholder = 'Nombre del cliente';
+                    nombreCliente.style.display = '';
+                }
+                if (labelDocumento) labelDocumento.textContent = 'Nombre';
+            } else {
+                // Mostrar grupo DNI y botón consultar
+                if (grupoDni) grupoDni.style.display = '';
+                
+                if (tipoDoc) tipoDoc.textContent = 'DNI';
+                if (documento) {
+                    documento.placeholder = 'Ingrese DNI';
+                    documento.value = '';
+                    nombreCliente.readOnly = true;
+                }
+                if (consultarBtn) consultarBtn.disabled = false;
+                
+                if (nombreCliente) {
+                    nombreCliente.value = '';
+                    nombreCliente.readOnly = false;
+                    nombreCliente.placeholder = 'Nombre del cliente';
+                    nombreCliente.style.display = '';
+                }
+                if (labelDocumento) labelDocumento.textContent = 'Boleta';
+            }
         });
     }
 
-    // FUNCIÓN UNIFICADA PARA CONSULTAR DNI O RUC CON VALIDACIÓN MEJORADA
-    const consultarBtn = document.getElementById('consultarBtn');
+    // FUNCIÓN UNIFICADA PARA CONSULTAR DNI  CON VALIDACIÓN MEJORADA
     if (consultarBtn) {
         consultarBtn.addEventListener('click', function() {
             const documento = document.getElementById('documento');
@@ -186,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const documentoValue = documento.value.trim();
             const tipoComprobanteValue = tipoComprobante.value;
             
-            console.log('🚀 Iniciando consulta...', { documento: documentoValue, tipoComprobante: tipoComprobanteValue });
+            console.log('Iniciando consulta...', { documento: documentoValue, tipoComprobante: tipoComprobanteValue });
             
             // Determinar si es DNI o RUC y validar formato
             let esValido = false;
@@ -245,7 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Verificar si la respuesta es JSON válida
                 if (!response.ok) {
                     return response.text().then(text => {
-                        console.error('❌ Error response:', text);
+                        console.error('Error response:', text);
                         throw new Error(`HTTP error! status: ${response.status} - ${text}`);
                     });
                 }
@@ -253,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     return response.text().then(text => {
-                        console.error('❌ Response is not JSON:', text);
+                        console.error('Response is not JSON:', text);
                         throw new Error('La respuesta no es JSON válido');
                     });
                 }
@@ -269,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (tipoBusqueda === 'dni') {
                         console.log('👤 Procesando resultado DNI');
                         
-                        // ✅ MANEJO CORRECTO PARA DNI
+                        // MANEJO CORRECTO PARA DNI
                         const nombreCompleto = data.data.nombre_completo || 'Nombre no disponible';
                         
                         nombreCompletoSpan.textContent = nombreCompleto;
@@ -279,10 +333,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('👤 DNI procesado:', { nombre: nombreCompleto });
                         
                     } else {
-                        console.log('🏢 Procesando resultado RUC');
-                        console.log('🏢 Datos RUC recibidos:', data.data);
+                        console.log('Procesando resultado RUC');
+                        console.log('Datos RUC recibidos:', data.data);
                         
-                        // ✅ MANEJO CORRECTO PARA RUC - USAR ESTRUCTURA DE FACTILIZA
+                        // MANEJO CORRECTO PARA RUC - USAR ESTRUCTURA DE FACTILIZA
                         const razonSocial = data.data.razon_social || data.data.nombre_o_razon_social || 'Razón social no disponible';
                         const direccion = data.data.direccion || data.data.direccion_completa || 'Dirección no disponible';
                         const estado = data.data.estado || 'Estado no disponible';
@@ -308,33 +362,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (direccionEmpresa) {
                             direccionEmpresa.textContent = direccion;
-                            console.log('📍 Dirección asignada:', direccion);
+                            console.log('Dirección asignada:', direccion);
                         } else {
-                            console.warn('⚠️ Elemento direccionEmpresa no encontrado');
+                            console.warn('Elemento direccionEmpresa no encontrado');
                         }
                         
                         if (estadoEmpresa) {
                             estadoEmpresa.textContent = estado;
-                            console.log('📊 Estado asignado:', estado);
+                            console.log('Estado asignado:', estado);
                         } else {
-                            console.warn('⚠️ Elemento estadoEmpresa no encontrado');
+                            console.warn('Elemento estadoEmpresa no encontrado');
                         }
                         
                         if (condicionEmpresa) {
                             condicionEmpresa.textContent = condicion;
-                            console.log('📊 Condición asignada:', condicion);
+                            console.log('Condición asignada:', condicion);
                         } else {
-                            console.warn('⚠️ Elemento condicionEmpresa no encontrado');
+                            console.warn('Elemento condicionEmpresa no encontrado');
                         }
                         
                         // Mostrar la sección de información adicional
                         infoRucDiv.style.display = 'block';
-                        console.log('🏢 Información RUC mostrada correctamente');
+                        console.log(' Información RUC mostrada correctamente');
                     }
                     
                     // Mostrar el resultado
                     resultadoDiv.style.display = 'block';
-                    console.log('✅ Resultado mostrado en interfaz');
+                    console.log('Resultado mostrado en interfaz');
                     
                 } else {
                     // Mostrar error de la API
@@ -358,6 +412,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.innerHTML = '<i class="bi bi-search"></i> Consultar';
                 console.log('🔄 Botón restaurado');
             });
+        });
+    }
+
+    // Mostrar/ocultar formularios según división de cuenta
+    const toggleDividirCuenta = document.getElementById('toggleDividirCuenta');
+    const inputDivision = document.getElementById('inputDivision');
+    const formDivision = document.getElementById('formDivision');
+    const formSinDivision = document.getElementById('formSinDivision');
+    if (toggleDividirCuenta && formDivision && formSinDivision) {
+        toggleDividirCuenta.addEventListener('click', function() {
+            // Alternar entre los formularios
+            const estaDividido = inputDivision.value === '1';
+            if (estaDividido) {
+                // Volver a modo normal
+                inputDivision.value = '0';
+                formDivision.style.display = 'none';
+                formSinDivision.style.display = '';
+                // Restaurar required
+                document.querySelectorAll('#formSinDivision [name="nombre_cliente"], #formSinDivision [name="metodo_pago[]"]').forEach(el => el.required = true);
+                document.querySelectorAll('#formDivision [required]').forEach(el => el.required = false);
+            } else {
+                // Ir a modo división
+                inputDivision.value = '1';
+                formDivision.style.display = '';
+                formSinDivision.style.display = 'none';
+                // Quitar required de los campos del form principal
+                document.querySelectorAll('#formSinDivision [required]').forEach(el => el.required = false);
+                // Puedes agregar required a los campos de división aquí si es necesario
+            }
         });
     }
 
@@ -415,7 +498,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const facturacionForm = document.getElementById('facturacionForm');
     if (facturacionForm) {
         facturacionForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+            e.preventDefault(); // <-- Esto es fundamental
+            // Validación extra para divisiones
+            if (inputDivision.value === '1') {
+                let valido = true;
+                document.querySelectorAll('.tipo-comprobante-division').forEach(function(select) {
+                    const tipo = select.value;
+                    const idx = select.getAttribute('data-idx');
+                    if (tipo === 'nota_venta') {
+                        const inputNombre = document.querySelector(`#campoNombreDivision${idx} input`);
+                        if (!inputNombre.value.trim()) {
+                            valido = false;
+                            inputNombre.classList.add('is-invalid');
+                        } else {
+                            inputNombre.classList.remove('is-invalid');
+                        }
+                    }
+                });
+                if (!valido) {
+                    e.preventDefault();
+                    alert('Debes ingresar el nombre para cada cliente de nota de venta.');
+                    return false;
+                }
+            }
             
             const formData = new FormData(this);
             
@@ -426,13 +531,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
+            .then(async response => {
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    alert('Error inesperado en la respuesta del servidor');
+                    return;
+                }
+                if (data.comprobante_id) {
                     comprobanteId = data.comprobante_id;
-                    mostrarModalAcciones();
+                    mostrarModalAcciones(); // SIEMPRE muestra el modal de éxito
+                } else if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
                 } else {
-                    alert('Error: ' + data.message);
+                    alert('Error: ' + (data.message || 'Error desconocido'));
                 }
             })
             .catch(error => {
@@ -442,26 +555,399 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-}); // Fin de DOMContentLoaded
+    const numCuentasInput = document.getElementById('numCuentas');
+    const generarDivisionesBtn = document.getElementById('generarDivisionesBtn');
+    const modoDivisionRadios = document.querySelectorAll('input[name="modoDivision"]');
+    const bloquesDivision = document.getElementById('bloquesDivision');
 
-function mostrarModalAcciones() {
-    if (confirm('¿Qué quieres hacer?\nPresiona OK para Imprimir o Cancelar para Enviar al correo')) {
-        // Imprimir: redirigir a la vista previa del comprobante usando la ruta de Laravel
-        const vistaPrevia = "{{ route('factura.vista_previa', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
-        window.location.href = vistaPrevia;
-    } else {
-        // Enviar al correo
-        const modalElement = document.getElementById('enviarCorreoModal');
-        if (modalElement && typeof bootstrap !== 'undefined') {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
+    // Habilita el botón solo si el número es válido
+    if (numCuentasInput && generarDivisionesBtn) {
+        numCuentasInput.addEventListener('input', function() {
+            generarDivisionesBtn.disabled = !(parseInt(numCuentasInput.value) >= 2 && parseInt(numCuentasInput.value) <= 10);
+        });
+    }
+
+    // Al cambiar el modo de división, limpiar los bloques
+    if (modoDivisionRadios && bloquesDivision) {
+        modoDivisionRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                bloquesDivision.innerHTML = '';
+            });
+        });
+    }
+
+    // Al hacer clic en el botón, generar los bloques según el modo
+    if (generarDivisionesBtn && numCuentasInput && bloquesDivision) {
+        generarDivisionesBtn.addEventListener('click', function() {
+            const n = parseInt(numCuentasInput.value);
+            if (isNaN(n) || n < 2 || n > 10) return;
+            const modo = document.querySelector('input[name="modoDivision"]:checked').value;
+            bloquesDivision.innerHTML = '';
+            document.getElementById('tablaDivisionItemsContainer').style.display = 'none';
+
+            if (modo === 'item') {
+                renderTablaDivisionItems(n);
+            } else {
+
+                for (let i = 1; i <= n; i++) {
+                    bloquesDivision.innerHTML += `
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6>Cuenta ${i}</h6>
+                                <div class="mb-2">
+                                    <label>Tipo de comprobante</label>
+                                    <select class="form-select tipo-comprobante-division" name="divisiones[${i-1}][tipo_comprobante]" data-idx="${i-1}">
+                                        <option value="boleta">Boleta</option>
+                                        <option value="nota_venta">Nota de Venta</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2 campo-dni-division" id="campoDniDivision${i-1}">
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">DNI</span>
+                                        <input type="text" class="form-control dni-division" name="divisiones[${i-1}][dni]" placeholder="Ingrese DNI" data-idx="${i-1}">
+                                        <button class="btn btn-outline-secondary btn-consultar-dni" type="button" data-idx="${i-1}">
+                                            <i class="bi bi-search"></i> Consultar
+                                        </button>
+                                    </div>
+                                    <div class="mb-2">
+                                        <input type="text" class="form-control nombre-division" name="divisiones[${i-1}][nombre]" placeholder="Nombre del cliente" data-idx="${i-1}" readonly>
+                                    </div>
+                                </div>
+                                <div class="mb-2 campo-nombre-division" id="campoNombreDivision${i-1}" style="display:none;">
+                                    <input type="text" class="form-control nombre-division" name="divisiones[${i-1}][nombre]" placeholder="Nombre del cliente" data-idx="${i-1}" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label>Método de pago</label>
+                                    <select class="form-select" name="divisiones[${i-1}][metodo_pago]" required>
+                                        <option value="">Seleccione</option>
+                                        <option value="efectivo">Efectivo</option>
+                                        <option value="tarjeta">Tarjeta</option>
+                                        <option value="yape">Yape</option>
+                                        <option value="plin">Plin</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label>Monto</label>
+                                    <input type="number" class="form-control" name="divisiones[${i-1}][monto]" min="0.01" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+            }
+
+
+        });
+    }
+
+    
+    
+
+    // Generar tabla de división por ítem
+    function renderTablaDivisionItems(nCuentas) {
+        const container = document.getElementById('tablaDivisionItemsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // Cabecera
+        let html = `<table class="table table-bordered align-middle text-center">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio Unitario</th>`;
+        for (let i = 1; i <= nCuentas; i++) {
+            html += `<th>Cliente ${i}</th>`;
+        }
+        html += `</tr></thead><tbody>`;
+
+        // Filas de productos
+        productosPedido.forEach((prod, idx) => {
+            for (let q = 1; q <= prod.cantidad; q++) {
+                html += `<tr>
+                    <td>${prod.nombre}</td>
+                    <td>S/ ${parseFloat(prod.precio).toFixed(2)}</td>`;
+                for (let c = 0; c < nCuentas; c++) {
+                    // --- CAMBIO: nombre del checkbox para backend ---
+                    html += `<td>
+                        <input type="checkbox" class="chk-prod-cuenta" 
+                            data-prod="${prod.id}" data-idx="${idx}" data-cuenta="${c}" data-q="${q}"
+                            name="chk_${prod.id}_${q}_${c}">
+                    </td>`;
+                }
+                html += `</tr>`;
+            }
+        });
+
+        html += `</tbody></table>`;
+
+        // Espacios para datos de clientes y montos
+        html += `<div class="row mt-3" id="datosClientesDivision">`;
+        for (let c = 0; c < nCuentas; c++) {
+            html += `
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h6>Cliente ${c+1}</h6>
+                        <div class="mb-2">
+                            <label>Tipo de comprobante</label>
+                            <select class="form-select tipo-comprobante-division" name="divisiones[${c}][tipo_comprobante]" data-idx="${c}">
+                                <option value="boleta">Boleta</option>
+                                <option value="nota_venta">Nota de Venta</option>
+                            </select>
+                        </div>
+                        <div class="mb-2 campo-dni-division" id="campoDniDivision${c}">
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">DNI</span>
+                                <input type="text" class="form-control dni-division" name="divisiones[${c}][dni]" placeholder="Ingrese DNI" data-idx="${c}">
+                                <button class="btn btn-outline-secondary btn-consultar-dni" type="button" data-idx="${c}">
+                                    <i class="bi bi-search"></i> Consultar
+                                </button>
+                            </div>
+                            <div class="mb-2">
+                                <input type="text" class="form-control nombre-division" name="divisiones[${c}][nombre]" placeholder="Nombre del cliente" data-idx="${c}" readonly>
+                            </div>
+                        </div>
+                        <div class="mb-2 campo-nombre-division" id="campoNombreDivision${c}" style="display:none;">
+                            <input type="text" class="form-control nombre-division" name="divisiones[${c}][nombre]" placeholder="Nombre del cliente" data-idx="${c}">
+                        </div>
+                        <div class="mb-2">
+                            <label>Método de pago</label>
+                            <select class="form-select" name="divisiones[${c}][metodo_pago]" required>
+                                <option value="">Seleccione</option>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="tarjeta">Tarjeta</option>
+                                <option value="yape">Yape</option>
+                                <option value="plin">Plin</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label>Monto</label>
+                            <input type="number" class="form-control monto-division" name="divisiones[${c}][monto]" min="0.01" step="0.01" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+        html += `</div>
+        <div class="text-danger mt-2" id="errorDivisionItems"></div>`;
+
+        container.innerHTML = html;
+        container.style.display = '';
+
+        // Inicializar comportamiento de comprobante/cliente
+        document.querySelectorAll('.tipo-comprobante-division').forEach(function(select) {
+            select.addEventListener('change', function() {
+                const idx = this.getAttribute('data-idx');
+                const tipo = this.value;
+                const campoDni = document.getElementById('campoDniDivision' + idx);
+                const campoNombre = document.getElementById('campoNombreDivision' + idx);
+                const inputNombre = campoNombre.querySelector('input');
+                if (tipo === 'boleta') {
+                    campoDni.style.display = '';
+                    campoNombre.style.display = 'none';
+                    inputNombre.required = false;
+                } else {
+                    campoDni.style.display = 'none';
+                    campoNombre.style.display = '';
+                    inputNombre.required = true;
+                }
+            });
+            select.dispatchEvent(new Event('change'));
+        });
+
+        // Consulta de DNI por bloque
+        document.querySelectorAll('.btn-consultar-dni').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const idx = this.getAttribute('data-idx');
+                const inputDni = document.querySelector('.dni-division[data-idx="'+idx+'"]');
+                const inputNombre = document.querySelector('.nombre-division[data-idx="'+idx+'"][readonly]');
+                const dni = inputDni.value.trim();
+                if (!/^[0-9]{8}$/.test(dni)) {
+                    alert('Ingrese un DNI válido de 8 dígitos');
+                    return;
+                }
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Consultando...';
+                fetch('{{ route("api.consultar_dni") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector("meta[name='csrf-token']").getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ dni: dni })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data && data.data.nombre_completo) {
+                        inputNombre.value = data.data.nombre_completo;
+                    } else {
+                        inputNombre.value = '';
+                        alert('No se encontró el DNI');
+                    }
+                })
+                .catch(() => {
+                    inputNombre.value = '';
+                    alert('Error al consultar el DNI');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-search"></i> Consultar';
+                });
+            });
+        });
+
+        // Listener para checkboxes: solo uno por fila y calcular montos
+        document.querySelectorAll('.chk-prod-cuenta').forEach(chk => {
+            chk.addEventListener('change', function() {
+                // Solo uno por fila
+                const prod = this.getAttribute('data-prod');
+                const idx = this.getAttribute('data-idx');
+                const q = this.getAttribute('data-q');
+                if (this.checked) {
+                    document.querySelectorAll(`.chk-prod-cuenta[data-prod="${prod}"][data-idx="${idx}"][data-q="${q}"]`).forEach(otherChk => {
+                        if (otherChk !== this) otherChk.checked = false;
+                    });
+                }
+                calcularMontosYValidar(nCuentas);
+            });
+        });
+
+        calcularMontosYValidar(nCuentas);
+    }
+
+    // Calcular montos y validar que cada producto esté asignado a una sola cuenta
+    function calcularMontosYValidar(nCuentas) {
+        let error = '';
+        let montos = Array(nCuentas).fill(0);
+
+        productosPedido.forEach((prod, idx) => {
+            for (let q = 1; q <= prod.cantidad; q++) {
+                let cuentaMarcada = -1;
+                let cuentaMarcadas = 0;
+                for (let c = 0; c < nCuentas; c++) {
+                    const chk = document.querySelector(`.chk-prod-cuenta[data-prod="${prod.id}"][data-idx="${idx}"][data-cuenta="${c}"][data-q="${q}"]`);
+                    if (chk && chk.checked) {
+                        cuentaMarcada = c;
+                        cuentaMarcadas++;
+                    }
+                }
+                if (cuentaMarcadas === 0) {
+                    error = `Cada producto debe estar asignado a un cliente.`;
+                }
+                if (cuentaMarcadas > 1) {
+                    error = `Un producto solo puede ser asignado a un cliente.`;
+                }
+                if (cuentaMarcada >= 0) {
+                    montos[cuentaMarcada] += parseFloat(prod.precio);
+                }
+            }
+        });
+
+        // Mostrar montos en inputs
+        document.querySelectorAll('.monto-division').forEach((input, idx) => {
+            input.value = montos[idx].toFixed(2);
+        });
+
+        // Mostrar error y habilitar/deshabilitar botón
+        document.getElementById('errorDivisionItems').textContent = error;
+        document.getElementById('btnConfirmar').disabled = !!error;
+    }
+
+    // Al hacer clic en "Generar divisiones", si es por ítem, muestra la tabla
+    if (generarDivisionesBtn && numCuentasInput) {
+        generarDivisionesBtn.addEventListener('click', function() {
+            const n = parseInt(numCuentasInput.value);
+            if (document.querySelector('input[name="modoDivision"]:checked').value === 'item') {
+                renderTablaDivisionItems(n);
+            } else {
+                document.getElementById('tablaDivisionItemsContainer').style.display = 'none';
+            }
+        });
+    };
+
+    const btnConfirmar = document.getElementById('btnConfirmar');
+
+    const enviarCorreoBtn = document.getElementById('enviarCorreoBtn');
+
+    if (facturacionForm && btnConfirmar) {
+        facturacionForm.addEventListener('input', function() {
+            if (formDivision && formDivision.style.display === 'none') {
+                btnConfirmar.disabled = !facturacionForm.checkValidity();
+            }
+        });
+        if (formDivision && formDivision.style.display === 'none') {
+            btnConfirmar.disabled = !facturacionForm.checkValidity();
         }
     }
-}
+    
+    // Inicializar comportamiento de cada bloque de división
+    document.querySelectorAll('.tipo-comprobante-division').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const idx = this.getAttribute('data-idx');
+            const tipo = this.value;
+            const campoDni = document.getElementById('campoDniDivision' + idx);
+            const campoNombre = document.getElementById('campoNombreDivision' + idx);
+            const inputNombre = campoNombre.querySelector('input');
+            if (tipo === 'boleta') {
+                campoDni.style.display = '';
+                campoNombre.style.display = 'none';
+                inputNombre.required = false;
+            } else {
+                campoDni.style.display = 'none';
+                campoNombre.style.display = '';
+                inputNombre.required = true;
+            }
+        });
+        // Llama una vez para el estado inicial
+        select.dispatchEvent(new Event('change'));
+    });
 
-// Envío de correo (fuera del DOMContentLoaded porque se ejecuta después)
-document.addEventListener('DOMContentLoaded', function() {
-    const enviarCorreoBtn = document.getElementById('enviarCorreoBtn');
+    // Consulta de DNI por bloque
+    document.querySelectorAll('.btn-consultar-dni').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const idx = this.getAttribute('data-idx');
+            const inputDni = document.querySelector('.dni-division[data-idx="'+idx+'"]');
+            const inputNombre = document.querySelector('.nombre-division[data-idx="'+idx+'"][readonly]');
+            const dni = inputDni.value.trim();
+            if (!/^[0-9]{8}$/.test(dni)) {
+                alert('Ingrese un DNI válido de 8 dígitos');
+                return;
+            }
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Consultando...';
+            fetch('{{ route("api.consultar_dni") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector("meta[name='csrf-token']").getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ dni: dni })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data && data.data.nombre_completo) {
+                    inputNombre.value = data.data.nombre_completo;
+                } else {
+                    inputNombre.value = '';
+                    alert('No se encontró el DNI');
+                }
+            })
+            .catch(() => {
+                inputNombre.value = '';
+                alert('Error al consultar el DNI');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-search"></i> Consultar';
+            });
+        });
+    });
+
+
+
     if (enviarCorreoBtn) {
         enviarCorreoBtn.addEventListener('click', function() {
             const form = document.getElementById('enviarCorreoForm');
@@ -497,6 +983,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+
+
+
+}); // Fin de DOMContentLoaded
+
+function mostrarModalAcciones() {
+    // Mostrar modal de éxito
+    const modalElement = document.getElementById('modalExitoComprobante');
+    if (modalElement && typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+
+        // Al cerrar el modal (por cualquier medio), redirigir a la vista previa
+        modalElement.addEventListener('hidden.bs.modal', function handler() {
+            const vistaPrevia = "{{ route('factura.vista_previa', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
+            window.location.href = vistaPrevia;
+            // Remover el listener para evitar múltiples redirecciones
+            modalElement.removeEventListener('hidden.bs.modal', handler);
+        });
+
+        // Al hacer clic en aceptar, cerrar el modal (lo que dispara el evento anterior)
+        document.getElementById('btnAceptarExito').onclick = function() {
+            modal.hide();
+        };
+    } else {
+        // Fallback si no hay modal: redirigir directamente
+        const vistaPrevia = "{{ route('factura.vista_previa', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
+        window.location.href = vistaPrevia;
+    }
+}
 </script>
 @endsection

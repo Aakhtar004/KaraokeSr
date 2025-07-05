@@ -131,7 +131,7 @@
 let pedidoDetalleIdActual = null;
 let mesaNumeroActual = null;
 
-// ✨ FUNCIÓN PARA ORDENAR PEDIDOS POR FECHA Y REENUMERAR
+// FUNCIÓN PARA ORDENAR PEDIDOS POR FECHA Y REENUMERAR
 function ordenarYRenumerarPedidos() {
     const container = document.getElementById('pedidosContainer');
     const cards = Array.from(container.querySelectorAll('.card-historial'));
@@ -198,7 +198,7 @@ function mostrarModalExito(mensaje) {
 function marcarPedidoListo() {
     if (!pedidoDetalleIdActual) return;
 
-    // ✨ CORRECCIÓN: Usar la helper route() de Laravel correctamente con el parámetro
+    // CORRECCIÓN: Usar la helper route() de Laravel correctamente con el parámetro
     const url = "{{ route('cocina.pedido.listo', ':detalle') }}".replace(':detalle', pedidoDetalleIdActual);
     
     console.log('URL construida:', url);

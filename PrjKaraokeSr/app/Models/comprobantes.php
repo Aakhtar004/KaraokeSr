@@ -35,6 +35,12 @@ class comprobantes extends Model
         'notas_comprobante',
         'fecha_anulacion',
     ];
+    
+    // Definir los campos de fecha que deben ser convertidos a instancias de Carbon
+    protected $dates = [
+        'fecha_emision',
+        'fecha_anulacion'
+    ];
 
     // Relaciones
     public function pedido()

@@ -64,33 +64,58 @@ class controller_mesero extends Controller
     public function ver_mozo_pedido_mesa($idMesa)
     {
         $mesa = mesas::findOrFail($idMesa);
-        
-        // Categorías específicas para meseros
-        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
-        
-        // Obtener solo las categorías específicas para meseros
+
+        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras'];//Retiramos , 'Baldes' monetaneamente
+
         $categorias_producto = categorias_producto::whereIn('nombre', $categoriasMesero)
             ->where('estado', 1)
             ->get();
-        
-        // MODIFICADO: Obtener productos con lógica diferenciada para cocteles
+
         $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
             $query->whereIn('nombre', $categoriasMesero);
         })
         ->with('categoria')
         ->get();
-        
+
         // Filtrar productos según su categoría
         $productos = $productos->filter(function($producto) {
             if ($producto->categoria->nombre === 'Cocteles') {
-                // Para cocteles: solo mostrar si están activos (estado = 1)
                 return $producto->estado == 1;
             } else {
-                // Para otros productos: mostrar si están activos Y tienen stock
                 return $producto->estado == 1 && $producto->stock > 0;
             }
         });
-        
+
+        // ---  Obtener promociones activas y asociar a productos ---
+        $promocionesActivas = promociones::with(['productos.producto'])
+            ->where('estado_promocion', 'activa')
+            ->where('fecha_inicio', '<=', now())
+            ->where('fecha_fin', '>=', now())
+            // ->where('stock_promocion', '>', 0)
+            ->get();
+
+        foreach ($productos as $producto) {
+            $producto->en_promocion = false;
+            $producto->precio_promocion = null;
+            $producto->porcentaje_descuento = 0;
+            $producto->precio_original = $producto->precio_unitario;
+            foreach ($promocionesActivas as $promocion) {
+                foreach ($promocion->productos as $promoProducto) {
+                    if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                        $precioOriginal = $promoProducto->precio_original_referencia;
+                        $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                        $porcentajeDescuento = $this->calcularPorcentajeDescuento($precioOriginal, $promocion->descripcion_promocion);
+
+                        $producto->en_promocion = true;
+                        $producto->precio_promocion = $precioPromocional;
+                        $producto->porcentaje_descuento = $porcentajeDescuento;
+                        $producto->precio_original = $precioOriginal;
+                        break 2;
+                    }
+                }
+            }
+        }
+
         return view('view_mozo.mozo_pedido', compact('mesa', 'categorias_producto', 'productos'));
     }
 
@@ -120,62 +145,88 @@ class controller_mesero extends Controller
             return back()->with('error', 'Debe seleccionar al menos un producto.');
         }
 
+        // Obtener promociones activas una sola vez antes del foreach
+        $promocionesActivas = promociones::with(['productos.producto'])
+            ->where('estado_promocion', 'activa')
+            ->where('fecha_inicio', '<=', now())
+            ->where('fecha_fin', '>=', now())
+            // ->where('stock_promocion', '>', 0)
+            ->get();
+
         // Obtener información detallada de cada producto seleccionado
         foreach ($productos as $idProducto => $datos) {
             if (isset($datos['seleccionado']) && $datos['seleccionado'] == 1) {
                 $producto = productos::with('categoria')->find($idProducto);
-                
+
                 if ($producto) {
                     $cantidad = (int)($datos['cantidad'] ?? 1);
-                    
+
                     if ($editandoPedido) {
-                        $subtotal = $producto->precio_unitario * $cantidad;
+                        // --- Calcular precio promocional si aplica ---
+                        $precioUnitario = $producto->precio_unitario;
+                        foreach ($promocionesActivas as $promocion) {
+                            foreach ($promocion->productos as $promoProducto) {
+                                if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                                    $precioOriginal = $promoProducto->precio_original_referencia;
+                                    $precioUnitario = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                                    break 2;
+                                }
+                            }
+                        }
+                        $subtotal = $precioUnitario * $cantidad;
                         $totalPedido += $subtotal;
-                        
-                        // NUEVA LÓGICA: Validación diferenciada para cocteles
+
+                        // Validación diferenciada para cocteles
                         if ($producto->categoria->nombre === 'Cocteles') {
-                            // Para cocteles: solo validar que esté activo
                             if ($producto->estado != 1) {
                                 return back()->with('error', "El coctel {$producto->nombre} no está disponible actualmente.");
                             }
                         } else {
-                            // Para otros productos: validar stock
                             if ($producto->stock < $cantidad) {
                                 return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
                             }
                         }
-                        
+
                         $pedidosTemp[] = [
                             'id_producto' => $idProducto,
                             'nombre' => $producto->nombre,
                             'cantidad' => $cantidad,
-                            'precio' => $producto->precio_unitario,
+                            'precio' => $precioUnitario,
                             'subtotal' => $subtotal,
                             'area_destino' => $producto->area_destino
                         ];
                     } else {
                         // Flujo normal para pedidos nuevos
-                        $subtotal = $producto->precio_unitario * $cantidad;
+                        // --- Calcular precio promocional si aplica ---
+                        $precioUnitario = $producto->precio_unitario;
+                        foreach ($promocionesActivas as $promocion) {
+                            foreach ($promocion->productos as $promoProducto) {
+                                if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                                    $precioOriginal = $promoProducto->precio_original_referencia;
+                                    $precioUnitario = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                                    break 2;
+                                }
+                            }
+                        }
+                        $subtotal = $precioUnitario * $cantidad;
                         $totalPedido += $subtotal;
-                        
-                        // NUEVA LÓGICA: Validación diferenciada para cocteles
+
+                        // Validación diferenciada para cocteles
                         if ($producto->categoria->nombre === 'Cocteles') {
-                            // Para cocteles: solo validar que esté activo
                             if ($producto->estado != 1) {
                                 return back()->with('error', "El coctel {$producto->nombre} no está disponible actualmente.");
                             }
                         } else {
-                            // Para otros productos: validar stock
                             if ($producto->stock < $cantidad) {
                                 return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
                             }
                         }
-                        
+
                         $pedidosTemp[] = [
                             'id_producto' => $idProducto,
                             'nombre' => $producto->nombre,
                             'cantidad' => $cantidad,
-                            'precio' => $producto->precio_unitario,
+                            'precio' => $precioUnitario,
                             'subtotal' => $subtotal,
                             'area_destino' => $producto->area_destino
                         ];
@@ -278,7 +329,7 @@ class controller_mesero extends Controller
                         throw new \Exception("Producto no encontrado: {$item['nombre']}");
                     }
 
-                    // NUEVA LÓGICA: Manejo diferenciado de stock para cocteles
+                    // NUEVA LÓGICA: Manejo diferenciada de stock para cocteles
                     if ($producto->categoria->nombre !== 'Cocteles') {
                         // Solo decrementar stock para productos que NO son cocteles
                         if ($producto->stock < $item['cantidad']) {
@@ -354,7 +405,7 @@ class controller_mesero extends Controller
     public function editar_pedido($idPedido)
     {
         $pedido = pedidos::with(['mesa', 'detalles.producto'])->findOrFail($idPedido);
-        
+
         // Obtener solo mesas disponibles (sin pedidos pendientes) + la mesa actual del pedido
         $mesas = mesas::whereDoesntHave('pedidos', function($query) use ($idPedido) {
             $query->where('estado_pedido', 'PENDIENTE')
@@ -391,6 +442,38 @@ class controller_mesero extends Controller
             $productosNoEditablesPorCategoria[$categoria->id_categoria_producto]['productos'][] = $detalle;
         }
         
+        // Obtener promociones activas
+        $promocionesActivas = promociones::with(['productos.producto'])
+            ->where('estado_promocion', 'activa')
+            ->where('fecha_inicio', '<=', now())
+            ->where('fecha_fin', '>=', now())
+            // ->where('stock_promocion', '>', 0)
+            ->get();
+
+        // Recalcular atributos de promoción para cada producto editable
+        foreach ($productosPorCategoria as &$categoriaData) {
+            foreach ($categoriaData['productos'] as &$detalle) {
+                $producto = $detalle->producto;
+                $producto->en_promocion = false;
+                $producto->precio_promocion = null;
+                $producto->precio_original = $producto->precio_unitario;
+                foreach ($promocionesActivas as $promocion) {
+                    foreach ($promocion->productos as $promoProducto) {
+                        if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                            $precioOriginal = $promoProducto->precio_original_referencia;
+                            $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+
+                            $producto->en_promocion = true;
+                            $producto->precio_promocion = $precioPromocional;
+                            $producto->precio_original = $precioOriginal;
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+        unset($categoriaData, $detalle); // Limpia referencias
+
         return view('view_mozo.mozo_editar_pedido', compact(
             'pedido', 
             'mesas', 
@@ -469,15 +552,11 @@ class controller_mesero extends Controller
     {
         $pedido = pedidos::with('mesa')->findOrFail($idPedido);
         
-        // Categorías específicas para meseros
-        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
-        
-        // Obtener solo las categorías específicas para meseros
+        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras'];
         $categorias_producto = categorias_producto::whereIn('nombre', $categoriasMesero)
             ->where('estado', 1)
             ->get();
         
-        // Obtener productos con lógica diferenciada
         $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
             $query->whereIn('nombre', $categoriasMesero);
         })
@@ -487,15 +566,43 @@ class controller_mesero extends Controller
         // Filtrar productos según su categoría
         $productos = $productos->filter(function($producto) {
             if ($producto->categoria->nombre === 'Cocteles') {
-                // Para cocteles: solo mostrar si están activos
                 return $producto->estado == 1;
             } else {
-                // Para otros productos: mostrar si están activos Y tienen stock
                 return $producto->estado == 1 && $producto->stock > 0;
             }
         });
 
-        // Guardar datos del pedido en sesión para mantener el contexto
+        // --- AGREGAR PRODUCTOS A LAS PROMOCIONES ---
+        $promocionesActivas = promociones::with(['productos.producto'])
+            ->where('estado_promocion', 'activa')
+            ->where('fecha_inicio', '<=', now())
+            ->where('fecha_fin', '>=', now())
+            // ->where('stock_promocion', '>', 0)
+            ->get();
+
+        foreach ($productos as $producto) {
+            $producto->en_promocion = false;
+            $producto->precio_promocion = null;
+            $producto->porcentaje_descuento = 0;
+            $producto->precio_original = $producto->precio_unitario;
+            foreach ($promocionesActivas as $promocion) {
+                foreach ($promocion->productos as $promoProducto) {
+                    if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                        $precioOriginal = $promoProducto->precio_original_referencia;
+                        $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                        $porcentajeDescuento = $this->calcularPorcentajeDescuento($precioOriginal, $promocion->descripcion_promocion);
+
+                        $producto->en_promocion = true;
+                        $producto->precio_promocion = $precioPromocional;
+                        $producto->porcentaje_descuento = $porcentajeDescuento;
+                        $producto->precio_original = $precioOriginal;
+                        break 2;
+                    }
+                }
+            }
+        }
+        // --------------------------------------------
+
         session([
             'editando_pedido' => $idPedido,
             'productos_ya_pedidos' => []
@@ -559,5 +666,26 @@ class controller_mesero extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Error al eliminar el pedido: ' . $e->getMessage());
         }
+    }
+
+    private function calcularPrecioPromocional($precioOriginal, $descripcionPromocion)
+    {
+        if (stripos($descripcionPromocion, '10%') !== false) {
+            return $precioOriginal * 0.9;
+        } elseif (stripos($descripcionPromocion, '50%') !== false) {
+            return $precioOriginal * 0.5;
+        } elseif (stripos($descripcionPromocion, '2x1') !== false) {
+            return $precioOriginal / 2;
+        }
+        return $precioOriginal;
+    }
+
+    private function calcularPorcentajeDescuento($precioOriginal, $descripcionPromocion)
+    {
+        $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $descripcionPromocion);
+        if ($precioOriginal > 0 && $precioPromocional < $precioOriginal) {
+            return round((($precioOriginal - $precioPromocional) / $precioOriginal) * 100);
+        }
+        return 0;
     }
 }

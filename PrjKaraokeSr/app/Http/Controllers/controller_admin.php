@@ -75,7 +75,7 @@ class controller_admin extends Controller
         }
     }
 
-    // NUEVO MÉTODO: Eliminar producto
+    //  MÉTODO: Eliminar producto
     public function eliminarProducto(productos $producto)
     {
         try {
@@ -165,7 +165,7 @@ class controller_admin extends Controller
         return view('view_admin.admin_detalle_pedido', compact('pedidos', 'fecha'));
     }
 
-    // NUEVO MÉTODO: Ver comprobante desde admin
+    //  MÉTODO: Ver comprobante desde admin
     public function ver_comprobante_admin($idComprobante)
     {
         try {
@@ -174,8 +174,11 @@ class controller_admin extends Controller
                 'pedido.mesa', 
                 'pedido.mesero'
             ])->findOrFail($idComprobante);
-            
-            return view('view_admin.admin_pedido_facturacion', compact('comprobante'));
+
+            // Traer todos los comprobantes del mismo pedido (para el slide)
+            $comprobantesDivision = comprobantes::where('id_pedido', $comprobante->id_pedido)->get();
+
+            return view('view_admin.admin_pedido_facturacion', compact('comprobante', 'comprobantesDivision'));
             
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return redirect()->route('vista.admin_historial_ventas')
@@ -238,7 +241,7 @@ class controller_admin extends Controller
         return view('view_admin.admin_generar_lista_compras', compact('productosCocina', 'productosBar'));
     }
 
-    // NUEVO MÉTODO PARA MARCAR PRODUCTOS COMO REABASTECIDOS
+    //  MÉTODO PARA MARCAR PRODUCTOS COMO REABASTECIDOS
     public function marcar_productos_reabastecidos(Request $request)
     {
         try {
@@ -577,17 +580,35 @@ class controller_admin extends Controller
             return back()->with('error', 'Error al agregar producto: ' . $e->getMessage());
         }
     }
-
+    private function calcularPrecioPromocional($precioOriginal, $descripcionPromocion)
+    {
+        if (stripos($descripcionPromocion, '10%') !== false) {
+            return round($precioOriginal * 0.9, 2);
+        } elseif (stripos($descripcionPromocion, '50%') !== false) {
+            return round($precioOriginal * 0.5, 2);
+        } elseif (stripos($descripcionPromocion, '2x1') !== false) {
+            return round($precioOriginal / 2, 2);
+        }
+        return round($precioOriginal, 2);
+    }
     // GESTIÓN DE PROMOCIONES
     public function ver_admin_promociones()
     {
         $promociones = promociones::with(['productos.producto'])->orderBy('fecha_creacion', 'desc')->get();
         
         // Obtener productos para el modal
-        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
+        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras'];//Quitamos , 'Baldes' momentaneamente
         $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
             $query->whereIn('nombre', $categoriasMesero);
         })->where('estado', 1)->with('categoria')->get();
+        
+        foreach ($promociones as $promocion) {
+            foreach ($promocion->productos as $promoProducto) {
+                $precioOriginal = $promoProducto->precio_original_referencia;
+                $promoProducto->precio_promocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                $promoProducto->precio_original = $precioOriginal;
+            }
+        }
         
         return view('view_admin.admin_promociones', compact('promociones', 'productos'));
     }
@@ -613,7 +634,7 @@ class controller_admin extends Controller
                 'fecha_inicio' => $promocion->fecha_inicio->format('Y-m-d'),
                 'fecha_fin' => $promocion->fecha_fin->format('Y-m-d'),
                 'estado_promocion' => $promocion->estado_promocion,
-                'stock_promocion' => $promocion->stock_promocion,
+                // 'stock_promocion' => $promocion->stock_promocion,
                 'imagen_url_promocion' => $promocion->imagen_url_promocion,
                 'productos' => $promocion->productos->pluck('id_producto')->toArray()
             ];
@@ -647,7 +668,7 @@ class controller_admin extends Controller
                 'productos.*' => 'exists:productos,id_producto',
                 'fecha_inicio' => 'required|date|after_or_equal:today',
                 'fecha_fin' => 'required|date|after:fecha_inicio',
-                'stock_promocion' => 'required|integer|min:1|max:999',
+                // 'stock_promocion' => 'required|integer|min:1|max:999',
                 'estado_promocion' => 'nullable|in:activa,inactiva',
                 'imagen_url_promocion' => 'nullable|url|max:500',
             ], [
@@ -658,9 +679,9 @@ class controller_admin extends Controller
                 'productos.min' => 'Debe seleccionar al menos un producto',
                 'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy',
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
-                'stock_promocion.required' => 'El stock de promoción es obligatorio',
-                'stock_promocion.min' => 'El stock debe ser mínimo 1',
-                'stock_promocion.max' => 'El stock no puede ser mayor a 999',
+                // 'stock_promocion.required' => 'El stock de promoción es obligatorio',
+                // 'stock_promocion.min' => 'El stock debe ser mínimo 1',
+                // 'stock_promocion.max' => 'El stock no puede ser mayor a 999',
                 'imagen_url_promocion.url' => 'La URL de la imagen debe ser válida',
                 'imagen_url_promocion.max' => 'La URL de la imagen no puede exceder 500 caracteres',
             ]);
@@ -670,12 +691,12 @@ class controller_admin extends Controller
             $productos = productos::whereIn('id_producto', $productosIds)->get();
             $stockMinimo = $productos->min('stock');
 
-            if ($request->stock_promocion > $stockMinimo) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "El stock de promoción no puede ser mayor al stock mínimo de los productos seleccionados ({$stockMinimo})"
-                ], 422);
-            }
+            // if ($request->stock_promocion > $stockMinimo) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => "El stock de promoción no puede ser mayor al stock mínimo de los productos seleccionados ({$stockMinimo})"
+            //     ], 422);
+            // }
 
             // Calcular precio de promoción basado en tipo
             $precioTotal = $productos->sum('precio_unitario');
@@ -708,7 +729,7 @@ class controller_admin extends Controller
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin' => $request->fecha_fin,
                 'estado_promocion' => $estadoPromocion,
-                'stock_promocion' => $request->stock_promocion,
+                
                 'imagen_url_promocion' => $request->imagen_url_promocion,
                 'fecha_creacion' => now(),
                 'fecha_actualizacion' => now(),
@@ -776,7 +797,7 @@ class controller_admin extends Controller
                 'productos.*' => 'exists:productos,id_producto',
                 'fecha_inicio' => $fechaInicioRule,
                 'fecha_fin' => 'required|date|after:fecha_inicio',
-                'stock_promocion' => 'required|integer|min:1|max:999',
+                // 'stock_promocion' => 'required|integer|min:1|max:999',
                 'estado_promocion' => 'nullable|in:activa,inactiva',
                 'imagen_url_promocion' => 'nullable|url|max:500',
             ], [
@@ -787,9 +808,9 @@ class controller_admin extends Controller
                 'productos.min' => 'Debe seleccionar al menos un producto',
                 'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy',
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
-                'stock_promocion.required' => 'El stock de promoción es obligatorio',
-                'stock_promocion.min' => 'El stock debe ser mínimo 1',
-                'stock_promocion.max' => 'El stock no puede ser mayor a 999',
+                // 'stock_promocion.required' => 'El stock de promoción es obligatorio',
+                // 'stock_promocion.min' => 'El stock debe ser mínimo 1',
+                // 'stock_promocion.max' => 'El stock no puede ser mayor a 999',
                 'imagen_url_promocion.url' => 'La URL de la imagen debe ser válida'
             ]);
 
@@ -798,12 +819,12 @@ class controller_admin extends Controller
             $productos = productos::whereIn('id_producto', $productosIds)->get();
             $stockMinimo = $productos->min('stock');
 
-            if ($request->stock_promocion > $stockMinimo) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "El stock de promoción no puede ser mayor al stock mínimo de los productos seleccionados ({$stockMinimo})"
-                ], 422);
-            }
+            // if ($request->stock_promocion > $stockMinimo) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => "El stock de promoción no puede ser mayor al stock mínimo de los productos seleccionados ({$stockMinimo})"
+            //     ], 422);
+            // }
 
             // Calcular precio de promoción basado en tipo
             $precioTotal = $productos->sum('precio_unitario');
@@ -837,7 +858,7 @@ class controller_admin extends Controller
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin' => $request->fecha_fin,
                 'estado_promocion' => $estadoPromocion,
-                'stock_promocion' => $request->stock_promocion,
+                
                 'imagen_url_promocion' => $request->imagen_url_promocion,
                 'fecha_actualizacion' => now()
             ]);
@@ -915,7 +936,7 @@ class controller_admin extends Controller
     public function obtener_productos_promocion()
     {
         try {
-            $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
+            $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras'];//Retiramos , 'Baldes' momentaneamente
             $productos = productos::whereHas('categoria', function($query) use ($categoriasMesero) {
                 $query->whereIn('nombre', $categoriasMesero);
             })->where('estado', 1)->with('categoria')->get();

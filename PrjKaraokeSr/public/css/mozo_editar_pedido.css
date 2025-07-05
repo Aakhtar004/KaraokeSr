@@ -197,6 +197,32 @@ body {
     padding: 0;
     color: #fff;
 }
+ 
+.promo-precio-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+.original-price {
+    color: #999;
+    text-decoration: line-through;
+    font-size: 1.1em;
+    margin-bottom: 2px;
+}
+.promo-price {
+    color: #c4361d;
+    background: #fffbe8;
+    font-weight: bold;
+    font-size: 1.5em;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+.price {
+    font-weight: bold;
+    font-size: 1.5em;
+    color: #c4361d;
+}
 
 @media (max-width: 700px) { 
     .mozo-header { 

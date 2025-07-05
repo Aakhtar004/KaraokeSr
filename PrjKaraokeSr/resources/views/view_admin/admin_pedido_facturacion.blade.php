@@ -7,6 +7,10 @@
 
 @section('content')
 
+@php
+$haySlide = isset($comprobantesDivision) && $comprobantesDivision->count() > 1;
+@endphp
+
 <div class="admin-header">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center">
@@ -29,8 +33,8 @@
                         <div class="row mb-4">
                             <div class="col-6">
                                 <div class="empresa-header">
-                                    <h6 class="mb-1">Restobar Salón Rojo</h6>
-                                    <small>Karaoke</small>
+                                    <h6 class="mb-1 text-black">Restobar Salón Rojo</h6>
+                                    <small class="text-black">Karaoke</small>
                                 </div>
                                 <div class="mt-2">
                                     <small>RUC: 10255667781</small><br>
@@ -86,14 +90,29 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($comprobante->pedido->detalles as $detalle)
-                                <tr>
-                                    <td>{{ $detalle->cantidad }}</td>
-                                    <td>{{ $detalle->producto->nombre }}</td>
-                                    <td>S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</td>
-                                    <td>S/ {{ number_format($detalle->subtotal, 2) }}</td>
-                                </tr>
-                                @endforeach
+                                {{-- Si hay división de cuenta, se muestran SOLO los productos pagados por este comprobante --}}
+                                @if($comprobante->pagosDetalle && $comprobante->pagosDetalle->count() > 0)
+                                    @foreach($comprobante->pagosDetalle as $pago)
+                                        @if($pago->detalle && $pago->detalle->producto)
+                                        <tr>
+                                            <td>{{ $pago->cantidad_item_pagada }}</td>
+                                            <td>{{ $pago->detalle->producto->nombre }}</td>
+                                            <td>S/ {{ number_format($pago->detalle->precio_unitario_momento, 2) }}</td>
+                                            <td>S/ {{ number_format($pago->monto_pagado, 2) }}</td>
+                                        </tr>
+                                        @endif
+                                    @endforeach
+                                {{-- Si NO hay división de cuenta, se muestran todos los productos del pedido --}}
+                                @else
+                                    @foreach($comprobante->pedido->detalles as $detalle)
+                                    <tr>
+                                        <td>{{ $detalle->cantidad }}</td>
+                                        <td>{{ $detalle->producto->nombre }}</td>
+                                        <td>S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</td>
+                                        <td>S/ {{ number_format($detalle->subtotal, 2) }}</td>
+                                    </tr>
+                                    @endforeach
+                                @endif
                             </tbody>
                         </table>
 
@@ -167,6 +186,53 @@
     </div>
 </div>
 
+@if($haySlide)
+    <style>
+        .slide-division {
+            position: fixed;
+            top: 0; right: 0;
+            width: 340px;
+            height: 100vh;
+            background: #fff;
+            border-left: 2px solid #eee;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.07);
+            z-index: 1050;
+            padding: 24px 18px 18px 18px;
+            overflow-y: auto;
+            transition: transform 0.3s;
+        }
+        .slide-division.hide {
+            transform: translateX(100%);
+        }
+        @media (max-width: 900px) {
+            .slide-division { position: fixed; width: 100%; height: 60vh; bottom: 0; top: auto; border-left: none; border-top: 2px solid #eee; box-shadow: 0 -2px 8px rgba(0,0,0,0.07); }
+        }
+    </style>
+    <div id="slideDivision" class="slide-division hide">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Comprobantes</h5>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('slideDivision').classList.add('hide')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="d-grid gap-3">
+            @foreach($comprobantesDivision as $c)
+                @php
+                    $isActive = $c->id_comprobante == $comprobante->id_comprobante;
+                    $vistaPreviaUrl = route('admin.ver_comprobante', $c->id_comprobante);
+                @endphp
+                <a href="{{ $vistaPreviaUrl }}" class="btn btn-block {{ $isActive ? 'btn-primary' : 'btn-outline-primary' }}">
+                    <div class="fw-bold">{{ strtoupper($c->tipo_comprobante) }}</div>
+                    <div class="small">{{ $c->nombre_razon_social_cliente ?? $c->numero_documento_cliente }}</div>
+                </a>
+            @endforeach
+        </div>
+    </div>
+    <button id="btnToggleSlide" class="btn btn-primary rounded-circle shadow" style="position:fixed;bottom:32px;right:32px;z-index:1100;width:60px;height:60px;display:flex;align-items:center;justify-content:center;">
+        <i class="fas fa-receipt fa-lg"></i>
+    </button>
+@endif
+
 <script>
 // Mejorar la impresión
 window.addEventListener('beforeprint', function() {
@@ -174,3 +240,19 @@ window.addEventListener('beforeprint', function() {
 });
 </script>
 @endsection
+
+@if($haySlide)
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnToggleSlide = document.getElementById('btnToggleSlide');
+    const slideDivision = document.getElementById('slideDivision');
+    if(btnToggleSlide && slideDivision) {
+        btnToggleSlide.addEventListener('click', function() {
+            slideDivision.classList.toggle('hide');
+        });
+    }
+});
+</script>
+@endpush
+@endif

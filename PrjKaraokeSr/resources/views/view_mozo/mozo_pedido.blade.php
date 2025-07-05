@@ -55,7 +55,7 @@
                                     @php
                                         $cantidadYaPedida = isset($productosYaPedidos) ? ($productosYaPedidos[$producto->id_producto] ?? 0) : 0;
                                         
-                                        // NUEVA LÓGICA: Diferente manejo para cocteles
+                                        // Diferente manejo para cocteles
                                         if($categoria->nombre === 'Cocteles') {
                                             // Para cocteles: disponibilidad basada en estado, no en stock
                                             $disponible = $producto->estado == 1;
@@ -83,6 +83,21 @@
                                                 @endif
                                                 <h5 class="card-title text-center">{{ $producto->nombre }}</h5>
                                                 <p class="card-text text-center text-muted">{{ $producto->descripcion ?? '' }}</p>
+                                                
+                                                
+
+                                                @if($producto->en_promocion)
+                                                    <span class="original-price" style="color: #999; text-decoration: line-through; font-size: 1.1em;">
+                                                        S/ {{ number_format($producto->precio_original, 2) }}
+                                                    </span>
+                                                    <span class="promo-price" style="color: #c4361d; background: #fffbe8; font-weight: bold; font-size: 1.5em; padding: 2px 8px; border-radius: 6px;">
+                                                        S/ {{ number_format($producto->precio_promocion, 2) }}
+                                                    </span>
+                                                @else
+                                                    <span class="price" style="font-weight: bold; font-size: 1.5em; color: #c4361d;">
+                                                        S/ {{ number_format($producto->precio_unitario, 2) }}
+                                                    </span>
+                                                @endif
                                                 
                                                 <!-- Estado del producto -->
                                                 @if(!$disponible)

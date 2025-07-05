@@ -117,6 +117,39 @@ html.dark #promociones {
     filter: grayscale(50%);
 }
 
+/* Overlay para productos agotados */
+.product-card .agotado-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+.product-card .agotado-overlay span {
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.2rem;
+    padding: 0.5em 1.2em;
+    background: rgba(196,54,29,0.85);
+    border-radius: 8px;
+    text-align: center;
+    word-break: break-word;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+@media (max-width: 600px) {
+    .product-card .agotado-overlay span {
+        font-size: 1rem;
+        padding: 0.4em 0.7em;
+    }
+}
+
 .product-image {
     height: 140px;
     background-size: cover;

@@ -24,7 +24,7 @@ class promociones extends Model
         'estado_promocion',
         'imagen_url_promocion',
         'dias_aplicables',
-        'stock_promocion',
+        // 'stock_promocion',
         'fecha_creacion',
         'fecha_actualizacion',
     ];

@@ -266,7 +266,7 @@ body {
     /* Cabecera de la empresa */
     .empresa-header {
         /* Sustituye inline bg y padding por utilidades */
-        background: #333 !important; /* o la clase .bg-dark */
+        /* background: #333 !important;*/
         color: white !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;

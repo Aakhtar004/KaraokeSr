@@ -9,11 +9,11 @@
   {{-- botón atrás a categorías --}}
   <x-app-header backUrl="{{ route('vista.admin_modificar_categoria') }}" />
 
-  <!-- NUEVO: Contenedor para mensajes -->
+  <!--  Contenedor para mensajes -->
   <div id="mensajes-container"></div>
 
   <div class="container">
-    <h2 class="mb-4">Productos en "{{ $categoria->nombre }}"</h2>
+    <h2 class="mb-4 text-white">Productos en "{{ $categoria->nombre }}"</h2>
 
     <ul class="list-group">
       @foreach($productos as $producto)
@@ -53,7 +53,7 @@
               >
             </div>
 
-            <!-- NUEVO: Switch de estado universal para todos los productos -->
+            <!--  Switch de estado universal para todos los productos -->
             <div class="form-check form-switch me-2 align-self-end">
               <input
                 class="form-check-input"
@@ -86,7 +86,7 @@
               <input type="hidden" name="stock" value="0">
               <div class="me-2">
                 <small class="text-info">
-                  <i class="fas fa-cocktail"></i> Coctel - Sin stock
+                  <i class="fas fa-cocktail"></i> Coctel - Sin manejo de stock
                 </small>
               </div>
             @endif
@@ -97,7 +97,7 @@
             </button>
           </form>
 
-          <!-- NUEVO: Botón Eliminar -->
+          <!--  Botón Eliminar -->
           <form
             action="{{ route('admin.producto.eliminar', $producto->id_producto) }}"
             method="POST"
@@ -122,7 +122,7 @@
     @endif
   </div>
 
-  <!-- NUEVO: Mensajes usando Bootstrap Alert tradicional -->
+  <!--  Mensajes usando Bootstrap Alert tradicional -->
   @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show position-fixed" 
          style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" 
@@ -144,12 +144,12 @@
 <script>
 function confirmarEliminacion(nombreProducto) {
     return confirm(
-        'ÂżEstÃ¡ seguro de eliminar el producto "' + nombreProducto + '"?\n\n' +
-        'Esta acciÃ³n:\n' +
-        'â€¢ EliminarÃ¡ el producto permanentemente\n' +
-        'â€¢ No se podrÃ¡ deshacer\n' +
-        'â€¢ Puede afectar pedidos existentes\n\n' +
-        'ÂżDesea continuar?'
+        'Esta¡ seguro de eliminar el producto "' + nombreProducto + '"?\n\n' +
+        'Esta accion:\n' +
+        'Eliminara el producto permanentemente\n' +
+        'No se podra deshacer\n' +
+        'Puede afectar pedidos existentes\n\n' +
+        'Desea continuar?'
     );
 }
 

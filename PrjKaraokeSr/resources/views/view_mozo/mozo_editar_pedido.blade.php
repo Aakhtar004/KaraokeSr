@@ -58,7 +58,20 @@
                             <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded" id="producto-{{ $detalle->id_pedido_detalle }}">
                                 <div class="flex-grow-1">
                                     <h6 class="mb-1">{{ $detalle->producto->nombre }}</h6>
-                                    <small class="text-muted">Precio: S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</small>
+                                    @if(isset($detalle->producto->en_promocion) && $detalle->producto->en_promocion)
+                                        <div class="promo-precio-container" style="display: flex; flex-direction: column; align-items: flex-start;">
+                                            <span class="original-price" style="color: #999; text-decoration: line-through; font-size: 1.1em;">
+                                                S/ {{ number_format($detalle->producto->precio_original, 2) }}
+                                            </span>
+                                            <span class="promo-price" style="color: #c4361d; background: #fffbe8; font-weight: bold; font-size: 1.5em; padding: 2px 8px; border-radius: 6px;">
+                                                S/ {{ number_format($detalle->producto->precio_promocion, 2) }}
+                                            </span>
+                                        </div>
+                                    @else
+                                        <span class="price" style="font-weight: bold; font-size: 1.5em; color: #c4361d;">
+                                            S/ {{ number_format($detalle->precio_unitario_momento, 2) }}
+                                        </span>
+                                    @endif
                                     <span class="badge bg-warning ms-2">{{ $detalle->estado_item }}</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-3">
