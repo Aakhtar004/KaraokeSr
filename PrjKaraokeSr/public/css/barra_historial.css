@@ -215,6 +215,132 @@ body {
     width: auto;
 }
 
+
+/* Estilos para el modal de selección de productos */
+.modal-seleccion-productos {
+    max-width: 600px;
+    width: 90%;
+}
+
+.info-mesa {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #007bff;
+}
+
+.productos-seleccion {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.producto-item-seleccion {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.producto-item-seleccion:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.producto-item-seleccion.seleccionado {
+    background: #e7f3ff;
+    border-color: #007bff;
+}
+
+.producto-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    cursor: pointer;
+}
+
+.producto-info {
+    flex: 1;
+    cursor: pointer;
+}
+
+.producto-nombre {
+    font-weight: 500;
+    margin: 0;
+    color: #333;
+}
+
+.producto-cantidad {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.contador-seleccion {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 20px;
+    border-top: 1px solid #dee2e6;
+}
+
+.btn-cancelar, .btn-enviar-todo, .btn-enviar-seleccionados {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-cancelar {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-cancelar:hover {
+    background: #5a6268;
+}
+
+.btn-enviar-todo {
+    background: #28a745;
+    color: white;
+}
+
+.btn-enviar-todo:hover {
+    background: #218838;
+}
+
+.btn-enviar-seleccionados {
+    background: #007bff;
+    color: white;
+}
+
+.btn-enviar-seleccionados:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+.btn-enviar-seleccionados:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 @media (max-width: 480px) {
     .card-historial {
         max-width: 390px;

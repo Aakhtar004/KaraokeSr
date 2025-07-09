@@ -262,12 +262,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const esCoctel = card.dataset.esCoctel === 'true';
             const currentValue = parseInt(input.value);
             
-            // Para cocteles, permitir hasta 10 (límite razonable)
             // Para otros productos, respetar el stock
-            const limite = esCoctel ? 10 : maxStock;
-            
-            if (currentValue < limite) {
+            if (esCoctel) {
                 input.value = currentValue + 1;
+            } else {
+                // Para otros productos, respetar el stock
+                if (currentValue < maxStock) {
+                    input.value = currentValue + 1;
+                }
             }
         });
     });

@@ -15,12 +15,12 @@
                     <tr>
                         <th>ID Pedido</th>
                         <th>Mesa</th>
-                        <th>Mesero</th> <!-- NUEVA COLUMNA -->
+                        <th>Mesero</th> 
                         <th>Productos</th>
-                        <th>Estado Comprobante</th> <!-- NUEVA COLUMNA -->
+                        <th>Estado Comprobante</th> 
                         <th>Total Pedido</th>
                         <th>Fecha/Hora</th>
-                        <th>Acciones</th> <!-- NUEVA COLUMNA -->
+                        <th>Acciones</th> 
                     </tr>
                 </thead>
                 <tbody>
@@ -29,7 +29,7 @@
                             <td><strong>#{{ $pedido->id_pedido }}</strong></td>
                             <td>Mesa {{ $pedido->mesa->numero_mesa }}</td>
                             
-                            <!-- NUEVA COLUMNA: Mesero con tooltip -->
+                            <!-- Mesero con tooltip -->
                             <td>
                                 @if($pedido->mesero)
                                     <span class="d-inline-block" 
@@ -58,7 +58,7 @@
                                 </ul>
                             </td>
                             
-                            <!-- NUEVA COLUMNA: Estado Comprobante -->
+                            <!-- Estado Comprobante -->
                             <td>
                                 @if($pedido->comprobante)
                                     <span class="badge bg-success">FACTURADO</span>
@@ -74,7 +74,7 @@
                                 <small>{{ $pedido->fecha_hora_pedido->format('H:i:s') }}</small>
                             </td>
                             
-                            <!-- NUEVA COLUMNA: Acciones -->
+                            <!-- Acciones -->
                             <td>
                                 @if($pedido->comprobante)
                                     <a href="{{ route('admin.ver_comprobante', $pedido->comprobante->id_comprobante) }}" 

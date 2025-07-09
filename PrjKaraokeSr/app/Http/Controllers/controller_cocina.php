@@ -269,4 +269,112 @@ class controller_cocina extends Controller
         
         return response()->json($response);
     }
+
+    // Método para obtener detalles de un pedido específico
+    public function obtenerDetallesPedido($idPedido)
+    {
+        try {
+            $idUsuario = Auth::id();
+            
+            // Obtener detalles del pedido específico para el usuario actual
+            $detalles = pedido_detalles::with(['pedido.mesa', 'producto'])
+                ->whereHas('pedido', function($query) use ($idPedido) {
+                    $query->where('id_pedido', $idPedido);
+                })
+                ->where('id_usuario_preparador', $idUsuario)
+                ->where('estado_item', 'SOLICITADO')
+                ->get();
+            
+            // Log para debug
+            Log::info('Detalles encontrados en cocina:', [
+                'id_pedido' => $idPedido,
+                'id_usuario' => $idUsuario,
+                'cantidad_detalles' => $detalles->count(),
+                'detalles' => $detalles->toArray()
+            ]);
+            
+            if ($detalles->isEmpty()) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => "No se encontraron detalles del pedido {$idPedido} para el usuario {$idUsuario}"
+                ]);
+            }
+
+            $pedidoInfo = [
+                'id_pedido' => $idPedido,
+                'mesa' => $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A',
+                'detalles' => $detalles->map(function($detalle) {
+                    return [
+                        'id_detalle' => $detalle->id_pedido_detalle,
+                        'producto' => $detalle->producto->nombre ?? 'Producto no encontrado',
+                        'cantidad' => $detalle->cantidad,
+                        'area_destino' => $detalle->producto->area_destino ?? 'cocina'
+                    ];
+                })
+            ];
+
+            return response()->json(['success' => true, 'data' => $pedidoInfo]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error en obtenerDetallesPedido de cocina:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener detalles: ' . $e->getMessage()]);
+        }
+    }
+
+    // Método para marcar productos seleccionados como listos
+    public function marcarProductosSeleccionados(Request $request)
+    {
+        try {
+            $detallesIds = $request->input('detalles_ids', []);
+            
+            if (empty($detallesIds)) {
+                return response()->json(['success' => false, 'message' => 'No se seleccionaron productos.']);
+            }
+
+            $idUsuario = Auth::id();
+            
+            // Validar que los detalles pertenecen al usuario actual y están en estado SOLICITADO
+            $detalles = pedido_detalles::with(['pedido.mesa', 'producto'])
+                ->whereIn('id_pedido_detalle', $detallesIds)
+                ->where('id_usuario_preparador', $idUsuario)
+                ->where('estado_item', 'SOLICITADO')
+                ->get();
+
+            if ($detalles->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'No se encontraron productos válidos para marcar.']);
+            }
+
+            // Filtrar solo productos de cocina o ambos
+            $detallesValidos = $detalles->filter(function($detalle) {
+                return in_array($detalle->producto->area_destino, ['cocina', 'ambos']);
+            });
+
+            if ($detallesValidos->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'Ningún producto corresponde al área de cocina.']);
+            }
+
+            // Marcar como listos
+            $detallesValidos->each(function($detalle) {
+                $detalle->update(['estado_item' => 'LISTO_PARA_ENTREGA']);
+            });
+
+            $mesa = $detallesValidos->first()->pedido->mesa->numero_mesa ?? 'N/A';
+            $cantidadMarcados = $detallesValidos->count();
+            
+            return response()->json([
+                'success' => true, 
+                'mesa' => $mesa,
+                'cantidad_marcados' => $cantidadMarcados,
+                'message' => "Se marcaron {$cantidadMarcados} producto(s) como listos para la Mesa {$mesa}."
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error al marcar productos: ' . $e->getMessage()]);
+        }
+    }
+
+
 }

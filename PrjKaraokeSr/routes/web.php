@@ -81,6 +81,11 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
 
         Route::post('/cocina/inventario/pedido', [controller_cocina::class, 'pedido_cocina_inventario'])->name('cocina.inventario.pedido');
         Route::post('/cocina/inventario/verificar', [controller_cocina::class, 'verificar_estado_inventario'])->name('cocina.inventario.verificar');
+
+        // rutas para manejo selectivo de pedidos de cocina
+        Route::get('/cocina/pedido/{idPedido}/detalles', [controller_cocina::class, 'obtenerDetallesPedido'])->name('cocina.pedido.detalles');
+        Route::post('/cocina/pedido/marcar-seleccionados', [controller_cocina::class, 'marcarProductosSeleccionados'])->name('cocina.pedido.marcar_seleccionados');
+
     });
 
     // Rutas para bartenders
@@ -93,6 +98,11 @@ Route::middleware(['auth:gusers', 'prevent-back-history'])->group(function () {
         Route::post('/barra/inventario/pedido', [controller_barra::class, 'pedido_barra_inventario'])->name('barra.inventario.pedido');
         
         Route::post('/barra/inventario/verificar', [controller_barra::class, 'verificar_estado_inventario'])->name('barra.inventario.verificar');
+
+        // rutas para manejo selectivo de pedidos
+        Route::get('/barra/pedido/{idPedido}/detalles', [controller_barra::class, 'obtenerDetallesPedido'])->name('barra.pedido.detalles');
+
+        Route::post('/barra/pedido/marcar-seleccionados', [controller_barra::class, 'marcarProductosSeleccionados'])->name('barra.pedido.marcar_seleccionados');
         
     });
 

@@ -94,7 +94,7 @@
                                     <div class="card-historial-tiempo-line"></div>
                                 </div>
                                 <button class="btn-listo"
-                                        data-id="{{ $detalles->first()->id_pedido_detalle }}"
+                                        data-pedido-id="{{ $idPedido }}"
                                         data-mesa="{{ $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A' }}">
                                     Listo
                                 </button>
@@ -133,9 +133,48 @@
     </div>
 </div>
 
+<!-- Modal de Selección de Productos -->
+<div id="modalSeleccionPedido" class="modal" style="display: none;">
+    <div class="modal-content modal-seleccion-productos">
+        <div class="modal-header">
+            <h2>Marcar Productos como Listos</h2>
+            <span class="close" onclick="cerrarModalSeleccion()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="info-mesa">
+                <p>Pedido de la <strong>Mesa <span id="mesaNumeroSeleccion"></span></strong></p>
+                <p class="text-muted">Selecciona los productos que están listos para entregar:</p>
+            </div>
+            
+            <form id="formSeleccionProductos">
+                @csrf
+                <div id="listaProductosSeleccion" class="productos-seleccion">
+                    <!-- Aquí se cargarán los productos dinámicamente -->
+                </div>
+                
+                <div class="contador-seleccion">
+                    <small class="text-muted">
+                        <span id="contadorSeleccionados">0</span> producto(s) seleccionado(s)
+                    </small>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancelar" onclick="cerrarModalSeleccion()">Cancelar</button>
+            <button type="button" class="btn-enviar-todo" onclick="enviarTodosLosProductos()">Enviar Todo</button>
+            <button type="button" class="btn-enviar-seleccionados" id="btnEnviarSeleccionados" disabled onclick="enviarProductosSeleccionados()">Enviar Seleccionado</button>
+        </div>
+    </div>
+</div>
+
+
+
+
 <script>
 let pedidoDetalleIdActual = null;
 let mesaNumeroActual = null;
+let pedidoIdActual = null;
+let productosDelPedido = [];
 
 // FUNCIÓN PARA ORDENAR PEDIDOS POR FECHA Y REENUMERAR
 function ordenarYRenumerarPedidos() {
@@ -165,6 +204,185 @@ function ordenarYRenumerarPedidos() {
     console.log('Pedidos reordenados por fecha y renumerados');
 }
 
+// FUNCIÓN PARA ABRIR EL MODAL DE SELECCIÓN
+function abrirModalSeleccion(pedidoId, mesaNumero) {
+    pedidoIdActual = pedidoId;
+    mesaNumeroActual = mesaNumero;
+    
+    document.getElementById('mesaNumeroSeleccion').textContent = mesaNumero;
+    document.getElementById('modalSeleccionPedido').style.display = 'block';
+    
+    // Cargar productos del pedido
+    cargarProductosPedido(pedidoId);
+}
+
+// FUNCIÓN PARA CARGAR PRODUCTOS DEL PEDIDO
+function cargarProductosPedido(pedidoId) {
+    const url = "{{ route('barra.pedido.detalles', ':pedidoId') }}".replace(':pedidoId', pedidoId);
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            productosDelPedido = data.data.detalles;
+            mostrarProductosEnModal(data.data.detalles);
+        } else {
+            alert('Error al cargar productos: ' + data.message);
+            cerrarModalSeleccion();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al cargar productos');
+        cerrarModalSeleccion();
+    });
+}
+
+// FUNCIÓN PARA MOSTRAR PRODUCTOS EN EL MODAL
+function mostrarProductosEnModal(productos) {
+    const container = document.getElementById('listaProductosSeleccion');
+    container.innerHTML = '';
+    
+    if (productos.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No hay productos disponibles para marcar.</div>';
+        return;
+    }
+    
+    productos.forEach(producto => {
+        const productoDiv = document.createElement('div');
+        productoDiv.className = 'producto-item-seleccion';
+        productoDiv.innerHTML = `
+            <input type="checkbox" 
+                   class="producto-checkbox" 
+                   value="${producto.id_detalle}" 
+                   id="producto_${producto.id_detalle}"
+                   onchange="actualizarContadorSeleccion()">
+            <label for="producto_${producto.id_detalle}" class="producto-info">
+                <div class="producto-nombre">${producto.producto}</div>
+                <div class="producto-cantidad">Cantidad: ${producto.cantidad}</div>
+            </label>
+        `;
+        container.appendChild(productoDiv);
+    });
+    
+    actualizarContadorSeleccion();
+}
+
+// FUNCIÓN PARA ACTUALIZAR CONTADOR DE SELECCIÓN
+function actualizarContadorSeleccion() {
+    const checkboxes = document.querySelectorAll('.producto-checkbox:checked');
+    const contador = document.getElementById('contadorSeleccionados');
+    const btnEnviarSeleccionados = document.getElementById('btnEnviarSeleccionados');
+    
+    const cantidadSeleccionada = checkboxes.length;
+    contador.textContent = cantidadSeleccionada;
+    
+    // Habilitar/deshabilitar botón según selección
+    btnEnviarSeleccionados.disabled = cantidadSeleccionada === 0;
+    
+    // Actualizar estilos visuales
+    document.querySelectorAll('.producto-item-seleccion').forEach(item => {
+        const checkbox = item.querySelector('.producto-checkbox');
+        if (checkbox.checked) {
+            item.classList.add('seleccionado');
+        } else {
+            item.classList.remove('seleccionado');
+        }
+    });
+}
+
+// FUNCIÓN PARA ENVIAR TODOS LOS PRODUCTOS
+function enviarTodosLosProductos() {
+    if (productosDelPedido.length === 0) {
+        alert('No hay productos para enviar');
+        return;
+    }
+    
+    const todosLosIds = productosDelPedido.map(producto => producto.id_detalle);
+    enviarProductosSeleccionados(todosLosIds);
+}
+
+// FUNCIÓN PARA ENVIAR PRODUCTOS SELECCIONADOS
+function enviarProductosSeleccionados(idsPersonalizados = null) {
+    let detallesIds;
+    
+    if (idsPersonalizados) {
+        detallesIds = idsPersonalizados;
+    } else {
+        const checkboxes = document.querySelectorAll('.producto-checkbox:checked');
+        detallesIds = Array.from(checkboxes).map(cb => cb.value);
+    }
+    
+    if (detallesIds.length === 0) {
+        alert('Por favor selecciona al menos un producto');
+        return;
+    }
+    
+    const url = "{{ route('barra.pedido.marcar_seleccionados') }}";
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            detalles_ids: detallesIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            cerrarModalSeleccion();
+            mostrarModalExito(data.message);
+            
+            // Remover la card del pedido
+            const cardWrapper = document.querySelector(`.card-historial[data-pedido-id="${pedidoIdActual}"]`)?.closest('.card-historial-wrapper');
+            if (cardWrapper) {
+                cardWrapper.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                cardWrapper.style.opacity = '0';
+                cardWrapper.style.transform = 'translateX(-20px)';
+                
+                setTimeout(() => {
+                    cardWrapper.remove();
+                    ordenarYRenumerarPedidos();
+                    
+                    const remainingCards = document.querySelectorAll('.card-historial-wrapper');
+                    if (remainingCards.length === 0) {
+                        const content = document.querySelector('.barra-historial-content');
+                        content.innerHTML = `
+                            <div class="no-pedidos">
+                                <p>No hay pedidos pendientes</p>
+                            </div>
+                        `;
+                    }
+                }, 300);
+            }
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al marcar productos');
+    });
+}
+
+// FUNCIÓN PARA CERRAR EL MODAL DE SELECCIÓN
+function cerrarModalSeleccion() {
+    document.getElementById('modalSeleccionPedido').style.display = 'none';
+    pedidoIdActual = null;
+    mesaNumeroActual = null;
+    productosDelPedido = [];
+}
+
+// FUNCIONES ORIGINALES MANTENIDAS
 function mostrarModalConfirmacion(detalleId, mesaNumero, detalles) {
     pedidoDetalleIdActual = detalleId;
     mesaNumeroActual = mesaNumero;
@@ -204,11 +422,8 @@ function mostrarModalExito(mensaje) {
 function marcarPedidoListo() {
     if (!pedidoDetalleIdActual) return;
 
-    // CORRECCIÓN: Usar la helper route() de Laravel correctamente con el parámetro
     const url = "{{ route('barra.pedido.listo', ':detalle') }}".replace(':detalle', pedidoDetalleIdActual);
     
-    console.log('URL construida:', url);
-
     fetch(url, {
         method: 'POST',
         headers: {
@@ -216,20 +431,12 @@ function marcarPedidoListo() {
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         }
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Response data:', data);
         if (data.success) {
             cerrarModal();
             mostrarModalExito(`Pedido de la Mesa ${data.mesa} marcado como listo.`);
             
-            // Encontrar y remover la card específica
             const cardWrapper = document.querySelector(`.card-historial[data-pedido-id="${pedidoDetalleIdActual}"]`)?.closest('.card-historial-wrapper');
             if (cardWrapper) {
                 cardWrapper.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -238,7 +445,6 @@ function marcarPedidoListo() {
                 
                 setTimeout(() => {
                     cardWrapper.remove();
-                    // REORDENAR DESPUÉS DE ELIMINAR
                     ordenarYRenumerarPedidos();
                     
                     const remainingCards = document.querySelectorAll('.card-historial-wrapper');
@@ -258,7 +464,7 @@ function marcarPedidoListo() {
     })
     .catch(error => {
         console.error('Error completo:', error);
-        alert('Error de conexión al marcar el pedido como listo. Revisa la consola para más detalles.');
+        alert('Error de conexión al marcar el pedido como listo.');
     });
 }
 
@@ -266,39 +472,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // ORDENAR PEDIDOS AL CARGAR LA PÁGINA
     ordenarYRenumerarPedidos();
     
-    // Configurar eventos para los botones "Listo"
+    // CONFIGURAR EVENTOS PARA LOS BOTONES "LISTO" - USAR MODAL DE SELECCIÓN
     const confirmButtons = document.querySelectorAll('.btn-listo');
     confirmButtons.forEach(button => {
         button.addEventListener('click', () => {
-            const detalleId = button.getAttribute('data-id');
+            const pedidoId = button.getAttribute('data-pedido-id');
             const mesaNumero = button.getAttribute('data-mesa');
             
-            // Obtener detalles del pedido de la tabla
-            const detalles = Array.from(button.closest('.card-historial').querySelectorAll('tbody tr')).map(row => {
-                const cantidadCell = row.querySelector('td[data-cantidad]');
-                const nombreCell = row.querySelector('td[data-nombre-producto]');
-                
-                return {
-                    cantidad: cantidadCell ? cantidadCell.getAttribute('data-cantidad') : '1',
-                    nombre: nombreCell ? nombreCell.getAttribute('data-nombre-producto') : 'Producto'
-                };
-            });
-            
-            mostrarModalConfirmacion(detalleId, mesaNumero, detalles);
+            // Abrir modal de selección
+            abrirModalSeleccion(pedidoId, mesaNumero);
         });
     });
     
     // Configurar eventos para cerrar modales
     const closeModalButtons = document.querySelectorAll('.close');
     closeModalButtons.forEach(button => {
-        button.addEventListener('click', cerrarModal);
+        button.addEventListener('click', function() {
+            cerrarModal();
+            cerrarModalSeleccion();
+        });
     });
     
     // Cerrar modal al hacer clic fuera
     window.addEventListener('click', (event) => {
-        const modal = document.getElementById('confirmModal');
-        if (event.target === modal) {
+        const confirmModal = document.getElementById('confirmModal');
+        const seleccionModal = document.getElementById('modalSeleccionPedido');
+        
+        if (event.target === confirmModal) {
             cerrarModal();  
+        }
+        
+        if (event.target === seleccionModal) {
+            cerrarModalSeleccion();
         }
     });
 });
