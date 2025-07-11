@@ -65,7 +65,7 @@ class controller_mesero extends Controller
     {
         $mesa = mesas::findOrFail($idMesa);
 
-        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras'];//Retiramos , 'Baldes' monetaneamente
+        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras','Baldes'];
 
         $categorias_producto = categorias_producto::whereIn('nombre', $categoriasMesero)
             ->where('estado', 1)
@@ -77,46 +77,115 @@ class controller_mesero extends Controller
         ->with('categoria')
         ->get();
 
-        // Filtrar productos según su categoría
-        $productos = $productos->filter(function($producto) {
-            if ($producto->categoria->nombre === 'Cocteles') {
+        // Obtener cervezas pequeñas para calcular stock de baldes
+        $cervezasPequenas = productos::whereIn('nombre', [
+            'Pilsen pequeña', 
+            'Cuzqueña dorada pequeña', 
+            'Cuzqueña trigo pequeña', 
+            'Cuzqueña negra pequeña', 
+            'Corona pequeña'
+        ])->get();
+
+        // Crear productos de baldes dinámicamente - CORREGIDO PARA INCLUIR imagen_url
+        $baldesProductos = collect();
+        foreach ($cervezasPequenas as $cerveza) {
+            $stockBaldes = intval($cerveza->stock / 6);
+            if ($stockBaldes > 0) {
+                $baldeProducto = [
+                    'id_producto' => 'balde_' . $cerveza->id_producto,
+                    'nombre' => 'Balde ' . str_replace(' pequeña', '', $cerveza->nombre),
+                    'descripcion' => 'Balde de 6 cervezas ' . $cerveza->nombre,
+                    'precio_unitario' => $cerveza->precio_unitario * 6,
+                    'stock' => $stockBaldes,
+                    'estado' => 1,
+                    'categoria' => ['nombre' => 'Baldes'],
+                    'area_destino' => 'bar',
+                    'cerveza_base_id' => $cerveza->id_producto,
+                    'es_balde' => true,
+                    'imagen_url' => $cerveza->imagen_url, // AGREGADO: Usar imagen de la cerveza base
+                    'unidad_medida' => 'unidad' // AGREGADO: Para evitar otros errores
+                ];
+                $baldesProductos->push((object)$baldeProducto);
+            }
+        }
+
+        // Agregar producto "Balde Personalizado" - CORREGIDO PARA INCLUIR imagen_url
+        $baldePersonalizado = [
+            'id_producto' => 'balde_personalizado',
+            'nombre' => 'Balde Personalizado',
+            'descripcion' => 'Elige hasta 6 cervezas pequeñas',
+            'precio_unitario' => 0,
+            'stock' => $cervezasPequenas->sum('stock') >= 6 ? 999 : 0,
+            'estado' => 1,
+            'categoria' => ['nombre' => 'Baldes'],
+            'area_destino' => 'bar',
+            'es_personalizado' => true,
+            'es_balde' => true,
+            'imagen_url' => null, // AGREGADO: Balde personalizado sin imagen por defecto
+            'unidad_medida' => 'unidad' // AGREGADO: Para evitar otros errores
+        ];
+        $baldesProductos->push((object)$baldePersonalizado);
+
+        // Convertir productos a array antes de merge para evitar conflictos
+        $productosArray = $productos->toArray();
+        $baldesArray = $baldesProductos->toArray();
+        
+        // Combinar usando array_merge y luego convertir a colección
+        $todosProductos = collect(array_merge($productosArray, $baldesArray));
+
+        // Filtrar productos según su categoría - CORREGIDO
+        $productos = $todosProductos->filter(function($producto) {
+            $producto = (object)$producto; // Asegurar que sea objeto
+            $categoria = is_array($producto->categoria) ? $producto->categoria['nombre'] : $producto->categoria->nombre;
+            
+            if ($categoria === 'Cocteles') {
                 return $producto->estado == 1;
             } else {
                 return $producto->estado == 1 && $producto->stock > 0;
             }
         });
 
-        // ---  Obtener promociones activas y asociar a productos ---
+        // Procesar promociones - CORREGIDO para manejar ambos tipos de productos
         $promocionesActivas = promociones::with(['productos.producto'])
             ->where('estado_promocion', 'activa')
             ->where('fecha_inicio', '<=', now())
             ->where('fecha_fin', '>=', now())
-            // ->where('stock_promocion', '>', 0)
             ->get();
 
-        foreach ($productos as $producto) {
-            $producto->en_promocion = false;
-            $producto->precio_promocion = null;
-            $producto->porcentaje_descuento = 0;
-            $producto->precio_original = $producto->precio_unitario;
-            foreach ($promocionesActivas as $promocion) {
-                foreach ($promocion->productos as $promoProducto) {
-                    if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
-                        $precioOriginal = $promoProducto->precio_original_referencia;
-                        $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
-                        $porcentajeDescuento = $this->calcularPorcentajeDescuento($precioOriginal, $promocion->descripcion_promocion);
+        $productos = $productos->map(function($producto) use ($promocionesActivas) {
+            $producto = (object)$producto; // Asegurar que sea objeto
+            
+            // Solo aplicar promociones a productos normales (no baldes)
+            if (!isset($producto->es_balde)) {
+                $producto->en_promocion = false;
+                $producto->precio_promocion = null;
+                $producto->porcentaje_descuento = 0;
+                $producto->precio_original = $producto->precio_unitario;
+                
+                foreach ($promocionesActivas as $promocion) {
+                    foreach ($promocion->productos as $promoProducto) {
+                        if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                            $precioOriginal = $promoProducto->precio_original_referencia;
+                            $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                            $porcentajeDescuento = $this->calcularPorcentajeDescuento($precioOriginal, $promocion->descripcion_promocion);
 
-                        $producto->en_promocion = true;
-                        $producto->precio_promocion = $precioPromocional;
-                        $producto->porcentaje_descuento = $porcentajeDescuento;
-                        $producto->precio_original = $precioOriginal;
-                        break 2;
+                            $producto->en_promocion = true;
+                            $producto->precio_promocion = $precioPromocional;
+                            $producto->porcentaje_descuento = $porcentajeDescuento;
+                            $producto->precio_original = $precioOriginal;
+                            break 2;
+                        }
                     }
                 }
             }
-        }
+            
+            return $producto;
+        });
 
-        return view('view_mozo.mozo_pedido', compact('mesa', 'categorias_producto', 'productos'));
+        // Crear variable para template
+        $productosYaPedidos = [];
+
+        return view('view_mozo.mozo_pedido', compact('mesa', 'categorias_producto', 'productos', 'cervezasPequenas', 'productosYaPedidos'));
     }
 
     public function ver_mozo_pedido_historial()
@@ -156,80 +225,161 @@ class controller_mesero extends Controller
         // Obtener información detallada de cada producto seleccionado
         foreach ($productos as $idProducto => $datos) {
             if (isset($datos['seleccionado']) && $datos['seleccionado'] == 1) {
-                $producto = productos::with('categoria')->find($idProducto);
-
-                if ($producto) {
-                    $cantidad = (int)($datos['cantidad'] ?? 1);
-
-                    if ($editandoPedido) {
-                        // --- Calcular precio promocional si aplica ---
-                        $precioUnitario = $producto->precio_unitario;
-                        foreach ($promocionesActivas as $promocion) {
-                            foreach ($promocion->productos as $promoProducto) {
-                                if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
-                                    $precioOriginal = $promoProducto->precio_original_referencia;
-                                    $precioUnitario = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
-                                    break 2;
+                // Verificar si es un balde
+                if (strpos($idProducto, 'balde_') === 0) {
+                    if ($idProducto === 'balde_personalizado') {
+                        // Procesar balde personalizado
+                        $configuracionBalde = json_decode($datos['configuracion_balde'] ?? '{}', true);
+                        
+                        if (empty($configuracionBalde)) {
+                            return back()->with('error', 'Configuración del balde personalizado no encontrada.');
+                        }
+                        
+                        $totalCervezas = array_sum(array_column($configuracionBalde, 'cantidad'));
+                        if ($totalCervezas > 6) {
+                            return back()->with('error', 'Un balde no puede tener más de 6 cervezas.');
+                        }
+                        
+                        // Calcular precio total y generar nombre
+                        $precioTotal = 0;
+                        $nombresBalde = [];
+                        
+                        foreach ($configuracionBalde as $cervezaId => $config) {
+                            $cerveza = productos::find($cervezaId);
+                            if ($cerveza) {
+                                $precioTotal += $config['precio'] * $config['cantidad'];
+                                $nombresBalde[] = $config['cantidad'] . 'x ' . $cerveza->nombre;
+                                
+                                // Validar stock
+                                if ($cerveza->stock < $config['cantidad']) {
+                                    return back()->with('error', "Stock insuficiente para {$cerveza->nombre}. Stock disponible: {$cerveza->stock}");
                                 }
                             }
                         }
-                        $subtotal = $precioUnitario * $cantidad;
-                        $totalPedido += $subtotal;
-
-                        // Validación diferenciada para cocteles
-                        if ($producto->categoria->nombre === 'Cocteles') {
-                            if ($producto->estado != 1) {
-                                return back()->with('error', "El coctel {$producto->nombre} no está disponible actualmente.");
-                            }
-                        } else {
-                            if ($producto->stock < $cantidad) {
-                                return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
-                            }
-                        }
-
+                        
+                        $nombreBalde = 'Balde Personalizado (' . implode(', ', $nombresBalde) . ')';
+                        
                         $pedidosTemp[] = [
                             'id_producto' => $idProducto,
-                            'nombre' => $producto->nombre,
-                            'cantidad' => $cantidad,
-                            'precio' => $precioUnitario,
-                            'subtotal' => $subtotal,
-                            'area_destino' => $producto->area_destino
+                            'nombre' => $nombreBalde,
+                            'cantidad' => 1,
+                            'precio' => $precioTotal,
+                            'subtotal' => $precioTotal,
+                            'area_destino' => 'bar',
+                            'configuracion_balde' => $configuracionBalde
                         ];
+                        
+                        $totalPedido += $precioTotal;
+                        
                     } else {
-                        // Flujo normal para pedidos nuevos
-                        // --- Calcular precio promocional si aplica ---
-                        $precioUnitario = $producto->precio_unitario;
-                        foreach ($promocionesActivas as $promocion) {
-                            foreach ($promocion->productos as $promoProducto) {
-                                if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
-                                    $precioOriginal = $promoProducto->precio_original_referencia;
-                                    $precioUnitario = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
-                                    break 2;
-                                }
-                            }
+                        // Procesar balde normal - CORREGIDO PRECIO
+                        $cervezaBaseId = str_replace('balde_', '', $idProducto);
+                        $cervezaBase = productos::find($cervezaBaseId);
+                        
+                        if (!$cervezaBase) {
+                            return back()->with('error', 'Cerveza base del balde no encontrada.');
                         }
+                        
+                        $cantidad = (int)($datos['cantidad'] ?? 1);
+                        $cervezasNecesarias = $cantidad * 6;
+                        
+                        if ($cervezaBase->stock < $cervezasNecesarias) {
+                            return back()->with('error', "Stock insuficiente para el balde. Se necesitan {$cervezasNecesarias} cervezas, disponibles: {$cervezaBase->stock}");
+                        }
+                        
+                        $nombreBalde = 'Balde ' . str_replace(' pequeña', '', $cervezaBase->nombre);
+                        $precioUnitario = $cervezaBase->precio_unitario * 6; // CAMBIADO: 6 cervezas, no 5
                         $subtotal = $precioUnitario * $cantidad;
-                        $totalPedido += $subtotal;
-
-                        // Validación diferenciada para cocteles
-                        if ($producto->categoria->nombre === 'Cocteles') {
-                            if ($producto->estado != 1) {
-                                return back()->with('error', "El coctel {$producto->nombre} no está disponible actualmente.");
-                            }
-                        } else {
-                            if ($producto->stock < $cantidad) {
-                                return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
-                            }
-                        }
-
+                        
                         $pedidosTemp[] = [
                             'id_producto' => $idProducto,
-                            'nombre' => $producto->nombre,
+                            'nombre' => $nombreBalde,
                             'cantidad' => $cantidad,
                             'precio' => $precioUnitario,
                             'subtotal' => $subtotal,
-                            'area_destino' => $producto->area_destino
+                            'area_destino' => 'bar',
+                            'cerveza_base_id' => $cervezaBaseId
                         ];
+                        
+                        $totalPedido += $subtotal;
+                    }
+                } else {
+                    // Procesar producto normal (código existente)
+                    $producto = productos::with('categoria')->find($idProducto);
+                    
+                    if ($producto) {
+                        $cantidad = (int)($datos['cantidad'] ?? 1);
+
+                        if ($editandoPedido) {
+                            // --- Calcular precio promocional si aplica ---
+                            $precioUnitario = $producto->precio_unitario;
+                            foreach ($promocionesActivas as $promocion) {
+                                foreach ($promocion->productos as $promoProducto) {
+                                    if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                                        $precioOriginal = $promoProducto->precio_original_referencia;
+                                        $precioUnitario = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                                        break 2;
+                                    }
+                                }
+                            }
+                            $subtotal = $precioUnitario * $cantidad;
+                            $totalPedido += $subtotal;
+
+                            // Validación diferenciada para cocteles
+                            if ($producto->categoria->nombre === 'Cocteles') {
+                                if ($producto->estado != 1) {
+                                    return back()->with('error', "El coctel {$producto->nombre} no está disponible actualmente.");
+                                }
+                            } else {
+                                if ($producto->stock < $cantidad) {
+                                    return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
+                                }
+                            }
+
+                            $pedidosTemp[] = [
+                                'id_producto' => $idProducto,
+                                'nombre' => $producto->nombre,
+                                'cantidad' => $cantidad,
+                                'precio' => $precioUnitario,
+                                'subtotal' => $subtotal,
+                                'area_destino' => $producto->area_destino
+                            ];
+                        } else {
+                            // Flujo normal para pedidos nuevos
+                            // --- Calcular precio promocional si aplica ---
+                            $precioUnitario = $producto->precio_unitario;
+                            foreach ($promocionesActivas as $promocion) {
+                                foreach ($promocion->productos as $promoProducto) {
+                                    if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                                        $precioOriginal = $promoProducto->precio_original_referencia;
+                                        $precioUnitario = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                                        break 2;
+                                    }
+                                }
+                            }
+                            $subtotal = $precioUnitario * $cantidad;
+                            $totalPedido += $subtotal;
+
+                            // Validación diferenciada para cocteles
+                            if ($producto->categoria->nombre === 'Cocteles') {
+                                if ($producto->estado != 1) {
+                                    return back()->with('error', "El coctel {$producto->nombre} no está disponible actualmente.");
+                                }
+                            } else {
+                                if ($producto->stock < $cantidad) {
+                                    return back()->with('error', "Stock insuficiente para {$producto->nombre}. Stock disponible: {$producto->stock}");
+                                }
+                            }
+
+                            $pedidosTemp[] = [
+                                'id_producto' => $idProducto,
+                                'nombre' => $producto->nombre,
+                                'cantidad' => $cantidad,
+                                'precio' => $precioUnitario,
+                                'subtotal' => $subtotal,
+                                'area_destino' => $producto->area_destino
+                            ];
+                        }
                     }
                 }
             }
@@ -272,35 +422,7 @@ class controller_mesero extends Controller
                 $pedido = pedidos::findOrFail($agregandoAPedido);
                 
                 foreach ($pedidosTemp as $item) {
-                    $producto = productos::with('categoria')->find($item['id_producto']);
-                    
-                    if (!$producto) {
-                        throw new \Exception("Producto no encontrado: {$item['nombre']}");
-                    }
-
-                    $idPreparador = $this->asignarPreparador($producto->area_destino);
-                    
-                    // NUEVA LÓGICA: Manejo diferenciado de stock para cocteles
-                    if ($producto->categoria->nombre !== 'Cocteles') {
-                        // Solo decrementar stock para productos que NO son cocteles
-                        if ($producto->stock < $item['cantidad']) {
-                            throw new \Exception("Stock insuficiente para {$producto->nombre}");
-                        }
-                        $producto->decrement('stock', $item['cantidad']);
-                    }
-                    // Para cocteles: no se decrementa stock, solo se valida estado
-
-                    // Crear nuevo detalle
-                    pedido_detalles::create([
-                        'id_pedido' => $pedido->id_pedido,
-                        'id_producto' => $item['id_producto'],
-                        'cantidad' => $item['cantidad'],
-                        'precio_unitario_momento' => $item['precio'],
-                        'subtotal' => $item['subtotal'],
-                        'estado_item' => 'SOLICITADO',
-                        'id_usuario_preparador' => $idPreparador,
-                        'fecha_creacion' => now()
-                    ]);
+                    $this->procesarItemPedido($item, $pedido->id_pedido);
                 }
 
                 // Actualizar total del pedido
@@ -323,34 +445,7 @@ class controller_mesero extends Controller
                 ]);
 
                 foreach ($pedidosTemp as $item) {
-                    $producto = productos::with('categoria')->find($item['id_producto']);
-                    
-                    if (!$producto) {
-                        throw new \Exception("Producto no encontrado: {$item['nombre']}");
-                    }
-
-                    // NUEVA LÓGICA: Manejo diferenciada de stock para cocteles
-                    if ($producto->categoria->nombre !== 'Cocteles') {
-                        // Solo decrementar stock para productos que NO son cocteles
-                        if ($producto->stock < $item['cantidad']) {
-                            throw new \Exception("Stock insuficiente para {$producto->nombre}");
-                        }
-                        $producto->decrement('stock', $item['cantidad']);
-                    }
-                    // Para cocteles: no se decrementa stock
-
-                    $idPreparador = $this->asignarPreparador($producto->area_destino);
-
-                    pedido_detalles::create([
-                        'id_pedido' => $pedido->id_pedido,
-                        'id_producto' => $item['id_producto'],
-                        'cantidad' => $item['cantidad'],
-                        'precio_unitario_momento' => $item['precio'],
-                        'subtotal' => $item['subtotal'],
-                        'estado_item' => 'SOLICITADO',
-                        'id_usuario_preparador' => $idPreparador,
-                        'fecha_creacion' => now()
-                    ]);
+                    $this->procesarItemPedido($item, $pedido->id_pedido);
                 }
 
                 // Marcar la mesa como ocupada
@@ -367,6 +462,102 @@ class controller_mesero extends Controller
         } catch (\Exception $e) {
             Log::error('Error al confirmar pedido:', ['error' => $e->getMessage()]);
             return back()->with('error', 'Error al procesar el pedido: ' . $e->getMessage());
+        }
+    }
+
+    // NUEVA FUNCIÓN HELPER PARA PROCESAR ITEMS
+    private function procesarItemPedido($item, $idPedido)
+    {
+        if (strpos($item['id_producto'], 'balde_') === 0) {
+            if ($item['id_producto'] === 'balde_personalizado') {
+                // BALDE PERSONALIZADO
+                $configuracionBalde = $item['configuracion_balde'];
+                
+                // Decrementar stock de cada cerveza
+                foreach ($configuracionBalde as $cervezaId => $config) {
+                    $cerveza = productos::find($cervezaId);
+                    if ($cerveza && $cerveza->stock >= $config['cantidad']) {
+                        $cerveza->decrement('stock', $config['cantidad']);
+                    } else {
+                        throw new \Exception("Stock insuficiente para {$cerveza->nombre}");
+                    }
+                }
+                
+                // CREAR DETALLE CON CAMPOS NUEVOS
+                pedido_detalles::create([
+                    'id_pedido' => $idPedido,
+                    'id_producto' => null, // NULL para baldes
+                    'cantidad' => $item['cantidad'],
+                    'precio_unitario_momento' => $item['precio'],
+                    'subtotal' => $item['subtotal'],
+                    'estado_item' => 'SOLICITADO',
+                    'id_usuario_preparador' => $this->asignarPreparador('bar'),
+                    'fecha_creacion' => now(),
+                    'nombre_producto_personalizado' => $item['nombre'],
+                    'tipo_producto' => 'balde_personalizado',
+                    'configuracion_especial' => $configuracionBalde
+                ]);
+                
+            } else {
+                // BALDE NORMAL
+                $cervezaBaseId = str_replace('balde_', '', $item['id_producto']);
+                $cervezaBase = productos::find($cervezaBaseId);
+                
+                if ($cervezaBase) {
+                    $cervezasNecesarias = $item['cantidad'] * 6;
+                    if ($cervezaBase->stock >= $cervezasNecesarias) {
+                        $cervezaBase->decrement('stock', $cervezasNecesarias);
+                    } else {
+                        throw new \Exception("Stock insuficiente para el balde de {$cervezaBase->nombre}");
+                    }
+                }
+                
+                // CREAR DETALLE CON CAMPOS NUEVOS
+                pedido_detalles::create([
+                    'id_pedido' => $idPedido,
+                    'id_producto' => null, // NULL para baldes
+                    'cantidad' => $item['cantidad'],
+                    'precio_unitario_momento' => $item['precio'],
+                    'subtotal' => $item['subtotal'],
+                    'estado_item' => 'SOLICITADO',
+                    'id_usuario_preparador' => $this->asignarPreparador('bar'),
+                    'fecha_creacion' => now(),
+                    'nombre_producto_personalizado' => $item['nombre'],
+                    'tipo_producto' => 'balde_normal',
+                    'id_producto_base' => $cervezaBaseId,
+                    'configuracion_especial' => ['cerveza_base_id' => $cervezaBaseId, 'cantidad_cervezas' => 6]
+                ]);
+            }
+        } else {
+            // PRODUCTO NORMAL (SIN CAMBIOS)
+            $producto = productos::with('categoria')->find($item['id_producto']);
+            
+            if (!$producto) {
+                throw new \Exception("Producto no encontrado: {$item['nombre']}");
+            }
+
+            // Manejo diferenciado de stock para cocteles
+            if ($producto->categoria->nombre !== 'Cocteles') {
+                if ($producto->stock < $item['cantidad']) {
+                    throw new \Exception("Stock insuficiente para {$producto->nombre}");
+                }
+                $producto->decrement('stock', $item['cantidad']);
+            }
+
+            $idPreparador = $this->asignarPreparador($producto->area_destino);
+
+            // CREAR DETALLE NORMAL
+            pedido_detalles::create([
+                'id_pedido' => $idPedido,
+                'id_producto' => $item['id_producto'],
+                'cantidad' => $item['cantidad'],
+                'precio_unitario_momento' => $item['precio'],
+                'subtotal' => $item['subtotal'],
+                'estado_item' => 'SOLICITADO',
+                'id_usuario_preparador' => $idPreparador,
+                'fecha_creacion' => now(),
+                'tipo_producto' => 'normal'
+            ]);
         }
     }
 
@@ -404,7 +595,7 @@ class controller_mesero extends Controller
 
     public function editar_pedido($idPedido)
     {
-        $pedido = pedidos::with(['mesa', 'detalles.producto'])->findOrFail($idPedido);
+        $pedido = pedidos::with(['mesa', 'detalles.producto', 'detalles.producto_base'])->findOrFail($idPedido);
 
         // Obtener solo mesas disponibles (sin pedidos pendientes) + la mesa actual del pedido
         $mesas = mesas::whereDoesntHave('pedidos', function($query) use ($idPedido) {
@@ -419,27 +610,61 @@ class controller_mesero extends Controller
         // Agrupar productos editables por categoría
         $productosPorCategoria = [];
         foreach ($detallesEditables as $detalle) {
-            $categoria = $detalle->producto->categoria;
-            if (!isset($productosPorCategoria[$categoria->id_categoria_producto])) {
-                $productosPorCategoria[$categoria->id_categoria_producto] = [
-                    'categoria' => $categoria,
-                    'productos' => []
-                ];
+            // CORREGIDO: Manejar diferentes tipos de productos
+            if ($detalle->tipo_producto === 'balde_personalizado' || $detalle->tipo_producto === 'balde_normal') {
+                // Para baldes, usar la categoría "Baldes"
+                $categoriaNombre = 'Baldes';
+                $categoriaId = 7; // ID de la categoría Baldes
+                
+                if (!isset($productosPorCategoria[$categoriaId])) {
+                    $productosPorCategoria[$categoriaId] = [
+                        'categoria' => (object)['id_categoria_producto' => $categoriaId, 'nombre' => $categoriaNombre],
+                        'productos' => []
+                    ];
+                }
+            } else {
+                // Para productos normales
+                $categoria = $detalle->producto->categoria;
+                if (!isset($productosPorCategoria[$categoria->id_categoria_producto])) {
+                    $productosPorCategoria[$categoria->id_categoria_producto] = [
+                        'categoria' => $categoria,
+                        'productos' => []
+                    ];
+                }
             }
-            $productosPorCategoria[$categoria->id_categoria_producto]['productos'][] = $detalle;
+            
+            $categoriaId = $detalle->tipo_producto === 'balde_personalizado' || $detalle->tipo_producto === 'balde_normal' ? 7 : $categoria->id_categoria_producto;
+            $productosPorCategoria[$categoriaId]['productos'][] = $detalle;
         }
 
         // Agrupar productos no editables por categoría
         $productosNoEditablesPorCategoria = [];
         foreach ($detallesNoEditables as $detalle) {
-            $categoria = $detalle->producto->categoria;
-            if (!isset($productosNoEditablesPorCategoria[$categoria->id_categoria_producto])) {
-                $productosNoEditablesPorCategoria[$categoria->id_categoria_producto] = [
-                    'categoria' => $categoria,
-                    'productos' => []
-                ];
+            // CORREGIDO: Manejar diferentes tipos de productos
+            if ($detalle->tipo_producto === 'balde_personalizado' || $detalle->tipo_producto === 'balde_normal') {
+                // Para baldes, usar la categoría "Baldes"
+                $categoriaNombre = 'Baldes';
+                $categoriaId = 7; // ID de la categoría Baldes
+                
+                if (!isset($productosNoEditablesPorCategoria[$categoriaId])) {
+                    $productosNoEditablesPorCategoria[$categoriaId] = [
+                        'categoria' => (object)['id_categoria_producto' => $categoriaId, 'nombre' => $categoriaNombre],
+                        'productos' => []
+                    ];
+                }
+            } else {
+                // Para productos normales
+                $categoria = $detalle->producto->categoria;
+                if (!isset($productosNoEditablesPorCategoria[$categoria->id_categoria_producto])) {
+                    $productosNoEditablesPorCategoria[$categoria->id_categoria_producto] = [
+                        'categoria' => $categoria,
+                        'productos' => []
+                    ];
+                }
             }
-            $productosNoEditablesPorCategoria[$categoria->id_categoria_producto]['productos'][] = $detalle;
+            
+            $categoriaId = $detalle->tipo_producto === 'balde_personalizado' || $detalle->tipo_producto === 'balde_normal' ? 7 : $categoria->id_categoria_producto;
+            $productosNoEditablesPorCategoria[$categoriaId]['productos'][] = $detalle;
         }
         
         // Obtener promociones activas
@@ -447,26 +672,30 @@ class controller_mesero extends Controller
             ->where('estado_promocion', 'activa')
             ->where('fecha_inicio', '<=', now())
             ->where('fecha_fin', '>=', now())
-            // ->where('stock_promocion', '>', 0)
             ->get();
 
-        // Recalcular atributos de promoción para cada producto editable
+        // Recalcular atributos de promoción para cada producto editable NORMAL
         foreach ($productosPorCategoria as &$categoriaData) {
-            foreach ($categoriaData['productos'] as &$detalle) {
-                $producto = $detalle->producto;
-                $producto->en_promocion = false;
-                $producto->precio_promocion = null;
-                $producto->precio_original = $producto->precio_unitario;
-                foreach ($promocionesActivas as $promocion) {
-                    foreach ($promocion->productos as $promoProducto) {
-                        if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
-                            $precioOriginal = $promoProducto->precio_original_referencia;
-                            $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+            foreach ($categoriaData['productos'] as $detalle) {
+                // SOLO aplicar promociones a productos normales
+                if ($detalle->tipo_producto === 'normal' && $detalle->producto) {
+                    $detalle->producto->en_promocion = false;
+                    $detalle->producto->precio_promocion = null;
+                    $detalle->producto->porcentaje_descuento = 0;
+                    
+                    foreach ($promocionesActivas as $promocion) {
+                        foreach ($promocion->productos as $promoProducto) {
+                            if ($promoProducto->producto && $promoProducto->producto->id_producto == $detalle->producto->id_producto) {
+                                $precioOriginal = $promoProducto->precio_original_referencia;
+                                $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                                $porcentajeDescuento = $this->calcularPorcentajeDescuento($precioOriginal, $promocion->descripcion_promocion);
 
-                            $producto->en_promocion = true;
-                            $producto->precio_promocion = $precioPromocional;
-                            $producto->precio_original = $precioOriginal;
-                            break 2;
+                                $detalle->producto->en_promocion = true;
+                                $detalle->producto->precio_promocion = $precioPromocional;
+                                $detalle->producto->porcentaje_descuento = $porcentajeDescuento;
+                                $detalle->producto->precio_original = $precioOriginal;
+                                break 2;
+                            }
                         }
                     }
                 }
@@ -552,7 +781,7 @@ class controller_mesero extends Controller
     {
         $pedido = pedidos::with('mesa')->findOrFail($idPedido);
         
-        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras'];
+        $categoriasMesero = ['Piqueos', 'Cocteles', 'Licores', 'Bebidas', 'Cervezas', 'Jarras', 'Baldes'];
         $categorias_producto = categorias_producto::whereIn('nombre', $categoriasMesero)
             ->where('estado', 1)
             ->get();
@@ -562,90 +791,162 @@ class controller_mesero extends Controller
         })
         ->with('categoria')
         ->get();
+
+        // Obtener cervezas pequeñas para calcular stock de baldes
+        $cervezasPequenas = productos::whereIn('nombre', [
+            'Pilsen pequeña', 
+            'Cuzqueña dorada pequeña', 
+            'Cuzqueña trigo pequeña', 
+            'Cuzqueña negra pequeña', 
+            'Corona pequeña'
+        ])->get();
+
+        // Crear productos de baldes dinámicamente - MISMO PATRÓN CORREGIDO
+        $baldesProductos = collect();
+        foreach ($cervezasPequenas as $cerveza) {
+            $stockBaldes = intval($cerveza->stock / 6);
+            if ($stockBaldes > 0) {
+                $baldeProducto = [
+                    'id_producto' => 'balde_' . $cerveza->id_producto,
+                    'nombre' => 'Balde ' . str_replace(' pequeña', '', $cerveza->nombre),
+                    'descripcion' => 'Balde de 6 cervezas ' . $cerveza->nombre,
+                    'precio_unitario' => $cerveza->precio_unitario * 6,
+                    'stock' => $stockBaldes,
+                    'estado' => 1,
+                    'categoria' => ['nombre' => 'Baldes'],
+                    'area_destino' => 'bar',
+                    'cerveza_base_id' => $cerveza->id_producto,
+                    'es_balde' => true,
+                    'imagen_url' => $cerveza->imagen_url, // AGREGADO: Usar imagen de la cerveza base
+                    'unidad_medida' => 'unidad' // AGREGADO: Para evitar otros errores
+                ];
+                $baldesProductos->push((object)$baldeProducto);
+            }
+        }
+
+        // Agregar producto "Balde Personalizado"
+        $baldePersonalizado = [
+            'id_producto' => 'balde_personalizado',
+            'nombre' => 'Balde Personalizado',
+            'descripcion' => 'Elige hasta 6 cervezas pequeñas',
+            'precio_unitario' => 0,
+            'stock' => $cervezasPequenas->sum('stock') >= 6 ? 999 : 0,
+            'estado' => 1,
+            'categoria' => ['nombre' => 'Baldes'],
+            'area_destino' => 'bar',
+            'es_personalizado' => true,
+            'es_balde' => true,
+            'imagen_url' => null, // AGREGADO: Balde personalizado sin imagen por defecto
+            'unidad_medida' => 'unidad' // AGREGADO: Para evitar otros errores
+        ];
+        $baldesProductos->push((object)$baldePersonalizado);
+
+        // Convertir y combinar correctamente
+        $productosArray = $productos->toArray();
+        $baldesArray = $baldesProductos->toArray();
+        $todosProductos = collect(array_merge($productosArray, $baldesArray));
         
         // Filtrar productos según su categoría
-        $productos = $productos->filter(function($producto) {
-            if ($producto->categoria->nombre === 'Cocteles') {
+        $productos = $todosProductos->filter(function($producto) {
+            $producto = (object)$producto;
+            $categoria = is_array($producto->categoria) ? $producto->categoria['nombre'] : $producto->categoria->nombre;
+            
+            if ($categoria === 'Cocteles') {
                 return $producto->estado == 1;
             } else {
                 return $producto->estado == 1 && $producto->stock > 0;
             }
         });
 
-        // --- AGREGAR PRODUCTOS A LAS PROMOCIONES ---
+        // Aplicar promociones
         $promocionesActivas = promociones::with(['productos.producto'])
             ->where('estado_promocion', 'activa')
             ->where('fecha_inicio', '<=', now())
             ->where('fecha_fin', '>=', now())
-            // ->where('stock_promocion', '>', 0)
             ->get();
 
-        foreach ($productos as $producto) {
-            $producto->en_promocion = false;
-            $producto->precio_promocion = null;
-            $producto->porcentaje_descuento = 0;
-            $producto->precio_original = $producto->precio_unitario;
-            foreach ($promocionesActivas as $promocion) {
-                foreach ($promocion->productos as $promoProducto) {
-                    if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
-                        $precioOriginal = $promoProducto->precio_original_referencia;
-                        $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
-                        $porcentajeDescuento = $this->calcularPorcentajeDescuento($precioOriginal, $promocion->descripcion_promocion);
+        $productos = $productos->map(function($producto) use ($promocionesActivas) {
+            $producto = (object)$producto;
+            
+            if (!isset($producto->es_balde)) {
+                $producto->en_promocion = false;
+                $producto->precio_promocion = null;
+                $producto->porcentaje_descuento = 0;
+                $producto->precio_original = $producto->precio_unitario;
+                
+                foreach ($promocionesActivas as $promocion) {
+                    foreach ($promocion->productos as $promoProducto) {
+                        if ($promoProducto->producto && $promoProducto->producto->id_producto == $producto->id_producto) {
+                            $precioOriginal = $promoProducto->precio_original_referencia;
+                            $precioPromocional = $this->calcularPrecioPromocional($precioOriginal, $promocion->descripcion_promocion);
+                            $porcentajeDescuento = $this->calcularPorcentajeDescuento($precioOriginal, $promocion->descripcion_promocion);
 
-                        $producto->en_promocion = true;
-                        $producto->precio_promocion = $precioPromocional;
-                        $producto->porcentaje_descuento = $porcentajeDescuento;
-                        $producto->precio_original = $precioOriginal;
-                        break 2;
+                            $producto->en_promocion = true;
+                            $producto->precio_promocion = $precioPromocional;
+                            $producto->porcentaje_descuento = $porcentajeDescuento;
+                            $producto->precio_original = $precioOriginal;
+                            break 2;
+                        }
                     }
                 }
             }
-        }
-        // --------------------------------------------
+            
+            return $producto;
+        });
 
         session([
             'editando_pedido' => $idPedido,
             'productos_ya_pedidos' => []
         ]);
 
-        return view('view_mozo.mozo_pedido', compact('pedido', 'categorias_producto', 'productos'))
+        $productosYaPedidos = [];
+
+        return view('view_mozo.mozo_pedido', compact('pedido', 'categorias_producto', 'productos','cervezasPequenas', 'productosYaPedidos'))
             ->with('mesa', $pedido->mesa)
-            ->with('editando', true)
-            ->with('productosYaPedidos', []);
+            ->with('editando', true);
     }
 
 
     public function eliminar_pedido($idPedido)
     {
-        $pedido = pedidos::with('detalles')->findOrFail($idPedido);
+        $pedido = pedidos::with(['detalles.producto', 'detalles.producto_base'])->findOrFail($idPedido);
         
         try {
             // VALIDACIÓN: No permitir eliminar pedidos con productos listos para entrega
             $productosListos = $pedido->detalles->where('estado_item', 'LISTO_PARA_ENTREGA');
-            
             if ($productosListos->count() > 0) {
-                $nombresProductos = $productosListos->pluck('producto.nombre')->take(3)->join(', ');
-                $cantidadListos = $productosListos->count();
-                
-                if ($cantidadListos > 3) {
-                    $nombresProductos .= ' y ' . ($cantidadListos - 3) . ' más';
-                }
-                
-                return back()->with('error', 
-                    "No se puede eliminar el pedido porque ya tiene productos listos para entrega: {$nombresProductos}. ".
-                    "Estos productos ya fueron preparados por cocina/bar."
-                );
+                return back()->with('error', 'No se puede eliminar un pedido que tiene productos listos para entrega.');
             }
             
-            // ✨ VALIDACIÓN ADICIONAL: Verificar si el pedido ya tiene comprobante
-            $tieneComprobante = $pedido->comprobante !== null;
-            if ($tieneComprobante) {
+            // VALIDACIÓN: No permitir eliminar pedidos que ya tienen comprobante
+            if ($pedido->comprobante) {
                 return back()->with('error', 'No se puede eliminar un pedido que ya ha sido facturado.');
             }
             
-            // Devolver stock de todos los productos
+            // Devolver stock de todos los productos según su tipo
             foreach ($pedido->detalles as $detalle) {
-                $detalle->producto->increment('stock', $detalle->cantidad);
+                if ($detalle->tipo_producto === 'balde_personalizado') {
+                    // Para baldes personalizados, devolver stock de cada cerveza
+                    if ($detalle->configuracion_especial) {
+                        foreach ($detalle->configuracion_especial as $cervezaId => $config) {
+                            $cerveza = productos::find($cervezaId);
+                            if ($cerveza) {
+                                $cerveza->increment('stock', $config['cantidad'] * $detalle->cantidad);
+                            }
+                        }
+                    }
+                } elseif ($detalle->tipo_producto === 'balde_normal') {
+                    // Para baldes normales, devolver stock a la cerveza base
+                    if ($detalle->producto_base) {
+                        $cervezasDevolver = $detalle->cantidad * 6; // 6 cervezas por balde
+                        $detalle->producto_base->increment('stock', $cervezasDevolver);
+                    }
+                } else {
+                    // Para productos normales (excluyendo cocteles)
+                    if ($detalle->producto && $detalle->producto->categoria->nombre !== 'Cocteles') {
+                        $detalle->producto->increment('stock', $detalle->cantidad);
+                    }
+                }
             }
             
             // Liberar la mesa (marcarla como disponible con valor ENUM: 'disponible')

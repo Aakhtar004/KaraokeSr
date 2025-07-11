@@ -49,7 +49,14 @@
                                     @foreach($pedido->detalles as $detalle)
                                         <li>
                                             <small>
-                                                {{ $detalle->cantidad }}x {{ $detalle->producto->nombre }} 
+                                                {{ $detalle->cantidad }}x 
+                                                @if($detalle->tipo_producto === 'balde_personalizado')
+                                                    {{ $detalle->nombre_producto_personalizado }}
+                                                @elseif($detalle->tipo_producto === 'balde_normal')
+                                                    {{ $detalle->nombre_producto_personalizado }}
+                                                @else
+                                                    {{ $detalle->producto->nombre ?? 'Producto no encontrado' }}
+                                                @endif
                                                 - S/ {{ number_format($detalle->precio_unitario_momento, 2) }} c/u
                                                 = <strong>S/ {{ number_format($detalle->subtotal, 2) }}</strong>
                                             </small>

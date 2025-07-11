@@ -93,10 +93,18 @@ $haySlide = isset($comprobantesDivision) && $comprobantesDivision->count() > 1;
                                 {{-- Si hay división de cuenta, se muestran SOLO los productos pagados por este comprobante --}}
                                 @if($comprobante->pagosDetalle && $comprobante->pagosDetalle->count() > 0)
                                     @foreach($comprobante->pagosDetalle as $pago)
-                                        @if($pago->detalle && $pago->detalle->producto)
+                                        @if($pago->detalle)
                                         <tr>
                                             <td>{{ $pago->cantidad_item_pagada }}</td>
-                                            <td>{{ $pago->detalle->producto->nombre }}</td>
+                                            <td>
+                                                @if($pago->detalle->tipo_producto === 'balde_personalizado')
+                                                    {{ $pago->detalle->nombre_producto_personalizado }}
+                                                @elseif($pago->detalle->tipo_producto === 'balde_normal')
+                                                    {{ $pago->detalle->nombre_producto_personalizado }}
+                                                @else
+                                                    {{ $pago->detalle->producto->nombre ?? 'Producto no encontrado' }}
+                                                @endif
+                                            </td>
                                             <td>S/ {{ number_format($pago->detalle->precio_unitario_momento, 2) }}</td>
                                             <td>S/ {{ number_format($pago->monto_pagado, 2) }}</td>
                                         </tr>
@@ -107,7 +115,15 @@ $haySlide = isset($comprobantesDivision) && $comprobantesDivision->count() > 1;
                                     @foreach($comprobante->pedido->detalles as $detalle)
                                     <tr>
                                         <td>{{ $detalle->cantidad }}</td>
-                                        <td>{{ $detalle->producto->nombre }}</td>
+                                        <td>
+                                            @if($detalle->tipo_producto === 'balde_personalizado')
+                                                {{ $detalle->nombre_producto_personalizado }}
+                                            @elseif($detalle->tipo_producto === 'balde_normal')
+                                                {{ $detalle->nombre_producto_personalizado }}
+                                            @else
+                                                {{ $detalle->producto->nombre ?? 'Producto no encontrado' }}
+                                            @endif
+                                        </td>
                                         <td>S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</td>
                                         <td>S/ {{ number_format($detalle->subtotal, 2) }}</td>
                                     </tr>

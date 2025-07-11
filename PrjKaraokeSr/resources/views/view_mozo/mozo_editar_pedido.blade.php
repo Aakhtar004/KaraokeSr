@@ -57,8 +57,36 @@
                         @foreach($categoriaData['productos'] as $detalle)
                             <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded" id="producto-{{ $detalle->id_pedido_detalle }}">
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ $detalle->producto->nombre }}</h6>
-                                    @if(isset($detalle->producto->en_promocion) && $detalle->producto->en_promocion)
+                                    {{-- NOMBRE DEL PRODUCTO - CORREGIDO PARA BALDES --}}
+                                    <h6 class="mb-1">
+                                        @if($detalle->tipo_producto === 'balde_personalizado')
+                                            {{ $detalle->nombre_producto_personalizado }}
+                                            @if($detalle->configuracion_especial)
+                                                <br><small class="text-muted">
+                                                    @php
+                                                        $config_detalles = [];
+                                                        foreach($detalle->configuracion_especial as $cerveza_id => $config) {
+                                                            $cerveza = \App\Models\productos::find($cerveza_id);
+                                                            if($cerveza) {
+                                                                $config_detalles[] = $config['cantidad'] . 'x ' . $cerveza->nombre;
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    ({{ implode(', ', $config_detalles) }})
+                                                </small>
+                                            @endif
+                                        @elseif($detalle->tipo_producto === 'balde_normal')
+                                            {{ $detalle->nombre_producto_personalizado }}
+                                            @if($detalle->producto_base)
+                                                <br><small class="text-muted">(6x {{ $detalle->producto_base->nombre }})</small>
+                                            @endif
+                                        @else
+                                            {{ $detalle->producto->nombre ?? 'Producto no encontrado' }}
+                                        @endif
+                                    </h6>
+
+                                    {{-- PRECIO - SOLO PARA PRODUCTOS NORMALES CON PROMOCIONES --}}
+                                    @if($detalle->tipo_producto === 'normal' && isset($detalle->producto->en_promocion) && $detalle->producto->en_promocion)
                                         <div class="promo-precio-container" style="display: flex; flex-direction: column; align-items: flex-start;">
                                             <span class="original-price" style="color: #999; text-decoration: line-through; font-size: 1.1em;">
                                                 S/ {{ number_format($detalle->producto->precio_original, 2) }}
@@ -75,27 +103,36 @@
                                     <span class="badge bg-warning ms-2">{{ $detalle->estado_item }}</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-3">
-                                    <!-- Control de cantidad -->
-                                    <div class="d-flex align-items-center">
-                                        <button type="button" 
-                                                class="btn btn-outline-secondary btn-sm btn-restar" 
-                                                data-detalle-id="{{ $detalle->id_pedido_detalle }}">-</button>
-                                        <input type="number" 
-                                               name="productos[{{ $detalle->id_pedido_detalle }}][cantidad]" 
-                                               id="cantidad-{{ $detalle->id_pedido_detalle }}"
-                                               value="{{ $detalle->cantidad }}" 
-                                               class="form-control mx-2 text-center" 
-                                               style="width: 60px; color: #000;" 
-                                               min="1"
-                                               max="{{ $detalle->cantidad + $detalle->producto->stock }}"
-                                               data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">
-                                        <button type="button" 
-                                                class="btn btn-outline-secondary btn-sm btn-sumar" 
-                                                data-detalle-id="{{ $detalle->id_pedido_detalle }}"
-                                                data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">+</button>
-                                    </div>
-                                    
-                                    <input type="hidden" name="productos[{{ $detalle->id_pedido_detalle }}][accion]" value="modificar">
+                                    {{-- CONTROLES DE CANTIDAD - SOLO PARA PRODUCTOS NORMALES --}}
+                                    @if($detalle->tipo_producto === 'normal')
+                                        <!-- Control de cantidad -->
+                                        <div class="d-flex align-items-center">
+                                            <button type="button" 
+                                                    class="btn btn-outline-secondary btn-sm btn-restar" 
+                                                    data-detalle-id="{{ $detalle->id_pedido_detalle }}">-</button>
+                                            <input type="number" 
+                                                   name="productos[{{ $detalle->id_pedido_detalle }}][cantidad]" 
+                                                   id="cantidad-{{ $detalle->id_pedido_detalle }}"
+                                                   value="{{ $detalle->cantidad }}" 
+                                                   class="form-control mx-2 text-center" 
+                                                   style="width: 60px; color: #000;" 
+                                                   min="1"
+                                                   max="{{ $detalle->cantidad + $detalle->producto->stock }}"
+                                                   data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">
+                                            <button type="button" 
+                                                    class="btn btn-outline-secondary btn-sm btn-sumar" 
+                                                    data-detalle-id="{{ $detalle->id_pedido_detalle }}"
+                                                    data-max="{{ $detalle->cantidad + $detalle->producto->stock }}">+</button>
+                                        </div>
+                                        
+                                        <input type="hidden" name="productos[{{ $detalle->id_pedido_detalle }}][accion]" value="modificar">
+                                    @else
+                                        {{-- PARA BALDES - SOLO MOSTRAR CANTIDAD SIN EDITAR --}}
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-primary">Cantidad: {{ $detalle->cantidad }}</span>
+                                        </div>
+                                        <span class="text-muted">No editable</span>
+                                    @endif
                                     
                                     <!-- Boton eliminar -->
                                     <button type="button" 
@@ -126,7 +163,16 @@
                         @foreach($categoriaData['productos'] as $detalle)
                             <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded bg-light">
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ $detalle->producto->nombre }}</h6>
+                                    {{-- NOMBRE DEL PRODUCTO - CORREGIDO PARA BALDES --}}
+                                    <h6 class="mb-1">
+                                        @if($detalle->tipo_producto === 'balde_personalizado')
+                                            {{ $detalle->nombre_producto_personalizado }}
+                                        @elseif($detalle->tipo_producto === 'balde_normal')
+                                            {{ $detalle->nombre_producto_personalizado }}
+                                        @else
+                                            {{ $detalle->producto->nombre ?? 'Producto no encontrado' }}
+                                        @endif
+                                    </h6>
                                     <small class="text-muted">Precio: S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</small>
                                     <span class="badge bg-success ms-2">{{ $detalle->estado_item }}</span>
                                 </div>
@@ -160,7 +206,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Botones de restar cantidad
+    // Botones de restar cantidad - SOLO PARA PRODUCTOS NORMALES
     document.querySelectorAll('.btn-restar').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const detalleId = this.getAttribute('data-detalle-id');
@@ -171,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Botones de sumar cantidad
+    // Botones de sumar cantidad - SOLO PARA PRODUCTOS NORMALES
     document.querySelectorAll('.btn-sumar').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const detalleId = this.getAttribute('data-detalle-id');
@@ -192,6 +238,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const accionInput = document.querySelector('input[name="productos[' + detalleId + '][accion]"]');
                 if (accionInput) {
                     accionInput.value = 'eliminar';
+                } else {
+                    // Para baldes, crear el input hidden
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'productos[' + detalleId + '][accion]';
+                    hiddenInput.value = 'eliminar';
+                    document.querySelector('form').appendChild(hiddenInput);
                 }
                 
                 // Ocultar el elemento visualmente
@@ -203,6 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
     // Funcionalidad de los botones del footer
     const agregarUrl = "{{ route('pedidos.agregar', $pedido->id_pedido) }}";
     

@@ -40,9 +40,20 @@ class controller_barra extends Controller
     public function ver_barra_historial() 
     {
         $idUsuario = Auth::id();
-        $pedidos = pedido_detalles::with(['pedido.mesa', 'producto'])
+        
+        // CORREGIDO: Incluir también los baldes en la consulta
+        $pedidos = pedido_detalles::with(['pedido.mesa', 'producto', 'producto_base'])
             ->where('id_usuario_preparador', $idUsuario)
             ->where('estado_item', 'SOLICITADO')
+            ->where(function($query) {
+                // Productos normales de bar
+                $query->whereHas('producto', function($subQuery) {
+                    $subQuery->whereIn('area_destino', ['bar', 'ambos']);
+                })
+                // O baldes (que no tienen producto asociado)
+                ->orWhere('tipo_producto', 'balde_personalizado')
+                ->orWhere('tipo_producto', 'balde_normal');
+            })
             ->orderBy('fecha_creacion', 'asc')
             ->get();
 
@@ -232,34 +243,72 @@ class controller_barra extends Controller
     {
         try {
             $idUsuario = Auth::id();
-            $detalles = pedido_detalles::with(['pedido.mesa', 'producto'])
+            $detalles = pedido_detalles::with(['pedido.mesa', 'producto', 'producto_base'])
                 ->where('id_usuario_preparador', $idUsuario)
                 ->where('estado_item', 'SOLICITADO')
                 ->whereHas('pedido', function($query) use ($idPedido) {
                     $query->where('id_pedido', $idPedido);
                 })
                 ->get();
-            
-            if ($detalles->isEmpty()) {
-                return response()->json(['success' => false, 'message' => 'No se encontraron detalles del pedido.']);
-            }
 
-            $pedidoInfo = [
-                'id_pedido' => $idPedido,
-                'mesa' => $detalles->first()->pedido->mesa->numero_mesa ?? 'N/A',
-                'detalles' => $detalles->map(function($detalle) {
-                    return [
-                        'id_detalle' => $detalle->id_pedido_detalle,
-                        'producto' => $detalle->producto->nombre ?? 'Producto no encontrado',
-                        'cantidad' => $detalle->cantidad,
-                        'area_destino' => $detalle->producto->area_destino ?? 'bar'
-                    ];
-                })
-            ];
+            $detallesFormateados = $detalles->map(function($detalle) {
+                // CORREGIDO: Usar accessor o lógica manual para obtener nombre
+                $nombreProducto = '';
+                
+                if ($detalle->tipo_producto === 'balde_personalizado') {
+                    $nombreProducto = $detalle->nombre_producto_personalizado ?: 'Balde Personalizado';
+                    
+                    // Agregar detalles de configuración si existen
+                    if ($detalle->configuracion_especial) {
+                        $config_detalles = [];
+                        foreach($detalle->configuracion_especial as $cerveza_id => $config) {
+                            $cerveza = \App\Models\productos::find($cerveza_id);
+                            if($cerveza) {
+                                $config_detalles[] = $config['cantidad'] . 'x ' . $cerveza->nombre;
+                            }
+                        }
+                        if (!empty($config_detalles)) {
+                            $nombreProducto .= ' (' . implode(', ', $config_detalles) . ')';
+                        }
+                    }
+                } elseif ($detalle->tipo_producto === 'balde_normal') {
+                    $nombreProducto = $detalle->nombre_producto_personalizado ?: 'Balde Normal';
+                    
+                    // Agregar detalle de cerveza base si existe
+                    if ($detalle->producto_base) {
+                        $nombreProducto .= ' (6x ' . $detalle->producto_base->nombre . ')';
+                    }
+                } else {
+                    // Producto normal
+                    $nombreProducto = $detalle->producto ? $detalle->producto->nombre : 'Producto no encontrado';
+                }
 
-            return response()->json(['success' => true, 'data' => $pedidoInfo]);
+                return [
+                    'id_detalle' => $detalle->id_pedido_detalle,
+                    'producto' => $nombreProducto,
+                    'cantidad' => $detalle->cantidad,
+                    'tipo_producto' => $detalle->tipo_producto,
+                    'configuracion_especial' => $detalle->configuracion_especial
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'pedido' => $detalles->first()->pedido ?? null,
+                    'detalles' => $detallesFormateados
+                ]
+            ]);
+
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error al obtener detalles: ' . $e->getMessage()]);
+            Log::error('Error en obtenerDetallesPedido de barra:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cargar detalles: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -286,9 +335,19 @@ class controller_barra extends Controller
                 return response()->json(['success' => false, 'message' => 'No se encontraron productos válidos para marcar.']);
             }
 
-            // Filtrar solo productos de bar o ambos
+            // CORREGIDO: Filtrar productos según su tipo
             $detallesValidos = $detalles->filter(function($detalle) {
-                return in_array($detalle->producto->area_destino, ['bar', 'ambos']);
+                // Para baldes, siempre van al bar
+                if ($detalle->tipo_producto === 'balde_personalizado' || $detalle->tipo_producto === 'balde_normal') {
+                    return true;
+                }
+                
+                // Para productos normales, verificar área de destino
+                if ($detalle->producto) {
+                    return in_array($detalle->producto->area_destino, ['bar', 'ambos']);
+                }
+                
+                return false;
             });
 
             if ($detallesValidos->isEmpty()) {

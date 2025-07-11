@@ -58,7 +58,33 @@
             @foreach($pedido->detalles as $detalle)
                 <div class="d-flex justify-content-between align-items-center mb-3 p-2 border-bottom">
                     <div class="flex-grow-1">
-                        <h6 class="mb-1">{{ $detalle->producto->nombre }}</h6>
+                        {{-- NOMBRE DEL PRODUCTO - CORREGIDO PARA BALDES --}}
+                        <h6 class="mb-1">
+                            @if($detalle->tipo_producto === 'balde_personalizado')
+                                {{ $detalle->nombre_producto_personalizado }}
+                                @if($detalle->configuracion_especial)
+                                    <br><small class="text-muted">
+                                        @php
+                                            $config_detalles = [];
+                                            foreach($detalle->configuracion_especial as $cerveza_id => $config) {
+                                                $cerveza = \App\Models\productos::find($cerveza_id);
+                                                if($cerveza) {
+                                                    $config_detalles[] = $config['cantidad'] . 'x ' . $cerveza->nombre;
+                                                }
+                                            }
+                                        @endphp
+                                        ({{ implode(', ', $config_detalles) }})
+                                    </small>
+                                @endif
+                            @elseif($detalle->tipo_producto === 'balde_normal')
+                                {{ $detalle->nombre_producto_personalizado }}
+                                @if($detalle->producto_base)
+                                    <br><small class="text-muted">(6x {{ $detalle->producto_base->nombre }})</small>
+                                @endif
+                            @else
+                                {{ $detalle->producto->nombre ?? 'Producto no encontrado' }}
+                            @endif
+                        </h6>
                         <div class="d-flex gap-3">
                             <small class="text-muted">Cantidad: {{ $detalle->cantidad }}</small>
                             <small class="text-muted">Precio unit: S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</small>

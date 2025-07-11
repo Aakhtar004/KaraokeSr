@@ -50,20 +50,22 @@
                 </button>
                 @endif
                 
-                @foreach($categorias as $categoria)
-                @if(isset($productosPorCategoria[$categoria->nombre]) && count($productosPorCategoria[$categoria->nombre]) > 0)
-                <button class="category-btn px-4 py-2 rounded-full text-sm font-medium border border-[#d05e4a] hover:border-[#c4361d] transition-all whitespace-nowrap {{ empty($promocionesParaCarta) && $loop->first ? 'active bg-[#d05e4a] text-[#fffbe8] border-transparent' : '' }}" 
-                        data-category="{{ strtolower(str_replace([' ', 'á', 'é', 'í', 'ó', 'ú'], ['', 'a', 'e', 'i', 'o', 'u'], $categoria->nombre)) }}"
-                        @if(empty($promocionesParaCarta) && $loop->first)
-                            style=""
-                        @else
-                            style="background-color: var(--color-cream); color: var(--color-red-dark);"
-                        @endif>
-                    <i class="{{ $iconos[$categoria->nombre] ?? 'fas fa-utensils' }} mr-1"></i>
-                    {{ $categoria->nombre }}
-                </button>
+                @if($categorias && $categorias->count() > 0)
+                    @foreach($categorias as $categoria)
+                    @if(isset($productosPorCategoria[$categoria->nombre]) && count($productosPorCategoria[$categoria->nombre]) > 0)
+                    <button class="category-btn px-4 py-2 rounded-full text-sm font-medium border border-[#d05e4a] hover:border-[#c4361d] transition-all whitespace-nowrap {{ empty($promocionesParaCarta) && $loop->first ? 'active bg-[#d05e4a] text-[#fffbe8] border-transparent' : '' }}" 
+                            data-category="{{ strtolower(str_replace([' ', 'á', 'é', 'í', 'ó', 'ú'], ['', 'a', 'e', 'i', 'o', 'u'], $categoria->nombre)) }}"
+                            @if(empty($promocionesParaCarta) && $loop->first)
+                                style=""
+                            @else
+                                style="background-color: var(--color-cream); color: var(--color-red-dark);"
+                            @endif>
+                        <i class="{{ isset($iconos[$categoria->nombre]) ? $iconos[$categoria->nombre] : 'fas fa-utensils' }} mr-1"></i>
+                        {{ $categoria->nombre }}
+                    </button>
+                    @endif
+                    @endforeach
                 @endif
-                @endforeach
             </div>
         </div>
     </div>
@@ -94,49 +96,15 @@
                             </div>
                         @endif
                         <div class="p-4">
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="font-semibold text-lg text-[#c4361d] flex-grow pr-2">{{ $promocion->nombre }}</h3>
-                                
+                            <div class="flex justify-content-between items-start">
+                                <h3 class="font-semibold text-lg mb-2 text-[#2d1a12]">{{ $promocion->nombre }}</h3>
+                                <span class="text-[#c4361d] font-bold text-lg">{{ $promocion->promo_badge }}</span>
                             </div>
                             @if($promocion->descripcion)
                                 <p class="text-secondary text-sm mb-2">{{ $promocion->descripcion }}</p>
                             @endif
-                            @if(!empty($promocion->productos_incluidos))
-                                <div class="text-xs text-gray-600 mb-2">
-                                    <strong>Incluye:</strong>
-                                    {{ implode(', ', array_map(fn($p) => $p['nombre'], array_slice($promocion->productos_incluidos, 0, 3))) }}
-                                    @if(count($promocion->productos_incluidos) > 3)
-                                        <span class="text-[#c4361d]"> y {{ count($promocion->productos_incluidos) - 3 }} más</span>
-                                    @endif
-                                </div>
-                            @endif
-                            <div class="flex flex-col gap-2 mt-2">
-                                @foreach($promocion->productos_incluidos as $prod)
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-semibold {{ $prod['agotado'] ? 'line-through text-gray-400' : '' }}">
-                                            {{ $prod['nombre'] }}
-                                        </span>
-                                        <span class="original-price text-gray-500 line-through text-sm">
-                                            S/{{ number_format($prod['precio_original'], 2) }}
-                                        </span>
-                                        <span class="price-tag px-3 py-1 text-[#fffbe8] font-bold block bg-[#c4361d] rounded">
-                                            S/{{ number_format($prod['precio_promocional'], 2) }}
-                                        </span>
-                                        @if(!empty($prod['unidad_medida']))
-                                            <span class="text-xs text-gray-400">/ {{ $prod['unidad_medida'] }}</span>
-                                        @endif
-                                        @if($prod['agotado'])
-                                            <span class="badge bg-danger ms-2">Agotado</span>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                            <div class="flex justify-between items-center text-xs">
-                                @if($promocion->porcentaje_descuento > 0)
-                                    <span class="text-green-600 font-semibold">
-                                        ¡Ahorra {{ $promocion->porcentaje_descuento }}%!
-                                    </span>
-                                @endif
+                            <div class="text-xs text-gray-500">
+                                Incluye: {{ collect($promocion->productos_incluidos)->pluck('nombre')->join(', ') }}
                             </div>
                         </div>
                     </div>
@@ -145,70 +113,92 @@
         </section>
         @endif
 
-        @foreach($categorias as $categoria)
-        @if(isset($productosPorCategoria[$categoria->nombre]) && count($productosPorCategoria[$categoria->nombre]) > 0)
-        <!-- {{ $categoria->nombre }} Section -->
-        <section id="{{ strtolower(str_replace([' ', 'á', 'é', 'í', 'ó', 'ú'], ['', 'a', 'e', 'i', 'o', 'u'], $categoria->nombre)) }}" class="menu-section {{ (empty($promocionesParaCarta) && $loop->first) ? 'active' : '' }}">
-            <div class="flex items-center mb-6 section-title pb-2">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#d05e4a] to-[#c4361d] flex items-center justify-center mr-3 shadow-md">
-                    <i class="{{ $iconos[$categoria->nombre] ?? 'fas fa-utensils' }} text-[#fffbe8] text-xl"></i>
+        @if($categorias && $categorias->count() > 0)
+            @foreach($categorias as $categoria)
+            @if(isset($productosPorCategoria[$categoria->nombre]) && count($productosPorCategoria[$categoria->nombre]) > 0)
+            <!-- {{ $categoria->nombre }} Section -->
+            <section id="{{ strtolower(str_replace([' ', 'á', 'é', 'í', 'ó', 'ú'], ['', 'a', 'e', 'i', 'o', 'u'], $categoria->nombre)) }}" class="menu-section {{ (empty($promocionesParaCarta) && $loop->first) ? 'active' : '' }}">
+                <div class="flex items-center mb-6 section-title pb-2">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#d05e4a] to-[#c4361d] flex items-center justify-center mr-3 shadow-md">
+                        <i class="{{ isset($iconos[$categoria->nombre]) ? $iconos[$categoria->nombre] : 'fas fa-utensils' }} text-[#fffbe8] text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-[#c4361d]">{{ $categoria->nombre }}</h2>
+                    <span class="ml-3 bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">{{ count($productosPorCategoria[$categoria->nombre]) }} productos</span>
                 </div>
-                <h2 class="text-2xl font-bold text-[#c4361d]">{{ $categoria->nombre }}</h2>
-                <span class="ml-3 bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">{{ count($productosPorCategoria[$categoria->nombre]) }} productos</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach($productosPorCategoria[$categoria->nombre] as $producto)
-                    <div class="product-card rounded-lg overflow-hidden shadow-md relative {{ ($categoria->nombre !== 'Cocteles' && $producto->stock == 0) ? 'out-of-stock' : '' }}">
-                        
-
-                        {{-- Imagen y estado --}}
-                        @if($categoria->nombre !== 'Cocteles' && $producto->stock == 0)
-                            <div class="agotado-overlay">
-                                <span>AGOTADO</span>
-                            </div>
-                        @elseif($categoria->nombre === 'Cocteles' && $producto->estado == 0)
-                            <div class="agotado-overlay">
-                                <span>NO DISPONIBLE</span>
-                            </div>
-                        @endif
-                        @if($producto->imagen_url)
-                            <div class="product-image" style="background-image: url('{{ $producto->imagen_url }}')"></div>
-                        @else
-                            <div class="product-image bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center">
-                                <i class="{{ $iconos[$categoria->nombre] ?? 'fas fa-utensils' }} text-white text-4xl"></i>
-                            </div>
-                        @endif
-                        <div class="p-4">
-                            <div class="flex justify-between items-start">
-                                <h3 class="font-semibold text-lg text-[#c4361d] flex-grow pr-2 {{ ($categoria->nombre !== 'Cocteles' && $producto->stock == 0) || ($categoria->nombre === 'Cocteles' && $producto->estado == 0) ? 'opacity-50' : '' }}">{{ $producto->nombre }}</h3>
-                                <div class="text-right flex-shrink-0">
-                                    {{-- PRECIO ORIGINAL TACHADO SI HAY PROMOCIÓN --}}
-                                    @if(!empty($producto->en_promocion) && $producto->en_promocion)
-                                        <span class="original-price text-gray-500 line-through text-sm">S/{{ number_format($producto->precio_unitario, 2) }}</span>
-                                        <span class="price-tag px-3 py-1 text-[#fffbe8] font-bold block">S/{{ number_format($producto->precio_promocion, 2) }}</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($productosPorCategoria[$categoria->nombre] as $producto)
+                        <div class="product-card rounded-lg overflow-hidden shadow-md relative {{ ($categoria->nombre !== 'Cocteles' && isset($producto->stock) && $producto->stock == 0) ? 'out-of-stock' : '' }}">
+                            {{-- Estado de stock --}}
+                            @if($categoria->nombre !== 'Cocteles' && isset($producto->stock) && $producto->stock == 0)
+                                <div class="agotado-overlay">
+                                    <span>AGOTADO</span>
+                                </div>
+                            @elseif($categoria->nombre === 'Cocteles' && isset($producto->estado) && $producto->estado == 0)
+                                <div class="agotado-overlay">
+                                    <span>NO DISPONIBLE</span>
+                                </div>
+                            @endif
+                            
+                            {{-- Imagen MODIFICADA --}}
+                            @if($categoria->nombre === 'Baldes')
+                                {{-- Para baldes: siempre mostrar el icono del balde --}}
+                                <div class="product-image bg-gradient-to-br from-[#d05e4a] to-[#c4361d] flex items-center justify-center">
+                                    <i class="fas fa-ice-cream text-[#fffbe8] text-4xl"></i>
+                                </div>
+                            @elseif(isset($producto->imagen_url) && $producto->imagen_url)
+                                {{-- Para otras categorías: mostrar imagen si existe --}}
+                                <div class="product-image" style="background-image: url('{{ $producto->imagen_url }}')"></div>
+                            @else
+                                {{-- Para otras categorías: mostrar icono de la categoría si no hay imagen --}}
+                                <div class="product-image bg-gradient-to-br from-[#d05e4a] to-[#c4361d] flex items-center justify-center">
+                                    <i class="{{ isset($iconos[$categoria->nombre]) ? $iconos[$categoria->nombre] : 'fas fa-utensils' }} text-[#fffbe8] text-4xl"></i>
+                                </div>
+                            @endif
+                            
+                            <div class="p-4">
+                                <div class="flex justify-content-between items-start">
+                                    <h3 class="font-semibold text-lg mb-2 text-[#2d1a12]">{{ $producto->nombre ?? 'Producto sin nombre' }}</h3>
+                                    @if(isset($producto->en_promocion) && $producto->en_promocion)
+                                        <div class="flex flex-col items-end">
+                                            <span class="text-gray-500 line-through text-sm">S/ {{ number_format($producto->precio_original ?? 0, 2) }}</span>
+                                            <span class="text-[#c4361d] font-bold text-lg">S/ {{ number_format($producto->precio_promocion ?? 0, 2) }}</span>
+                                            <span class="bg-red-500 text-white px-2 py-1 rounded text-xs">-{{ $producto->porcentaje_descuento ?? 0 }}%</span>
+                                        </div>
+                                    @elseif(isset($producto->es_personalizado) && $producto->es_personalizado)
+                                        <span class="text-[#c4361d] font-bold text-lg">A consultar</span>
                                     @else
-                                        
-                                        <span class="price-tag px-3 py-1 text-[#fffbe8] font-bold block">S/{{ number_format($producto->precio_unitario, 2) }}</span>
+                                        <span class="text-[#c4361d] font-bold text-lg">S/ {{ number_format($producto->precio_unitario ?? 0, 2) }}</span>
+                                    @endif
+                                </div>
+                                @if(isset($producto->descripcion) && $producto->descripcion)
+                                    <p class="text-secondary text-sm mb-2">{{ $producto->descripcion }}</p>
+                                @endif
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-500">{{ $producto->unidad_medida ?? 'Unidad' }}</span>
+                                    @if($categoria->nombre === 'Cocteles')
+                                        <span class="text-{{ isset($producto->estado) && $producto->estado == 1 ? 'green' : 'red' }}-600">
+                                            {{ isset($producto->estado) && $producto->estado == 1 ? 'Disponible' : 'No disponible' }}
+                                        </span>
+                                    @elseif(isset($producto->es_personalizado) && $producto->es_personalizado)
+                                        <span class="text-green-600">Disponible</span>
+                                    @else
+                                        <span class="text-{{ isset($producto->stock) && $producto->stock > 5 ? 'green' : (isset($producto->stock) && $producto->stock > 0 ? 'yellow' : 'red') }}-600">
+                                            @if(isset($producto->stock) && $producto->stock > 0)
+                                                {{ $producto->stock }} disponibles
+                                            @else
+                                                Agotado
+                                            @endif
+                                        </span>
                                     @endif
                                 </div>
                             </div>
-                            @if($producto->descripcion)
-                                <p class="text-secondary text-sm mb-2">{{ $producto->descripcion }}</p>
-                            @endif
-                            <div class="flex justify-between items-center text-xs">
-                                @if($producto->porcentaje_descuento > 0)
-                                    <span class="text-green-600 font-semibold">
-                                        ¡Ahorra {{ $producto->porcentaje_descuento }}%!
-                                    </span>
-                                @endif
-                            </div>
                         </div>
-                    </div>
-                @endforeach
-            </div>
-        </section>
+                    @endforeach
+                </div>
+            </section>
+            @endif
+            @endforeach
         @endif
-        @endforeach
     </main>
 
     <!-- Footer -->

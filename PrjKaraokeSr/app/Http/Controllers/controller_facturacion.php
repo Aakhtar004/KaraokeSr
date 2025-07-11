@@ -22,13 +22,18 @@ class controller_facturacion extends Controller
 {
     public function finalizar_pedido(Request $request, $idPedido)
     {
-        $pedido = pedidos::with(['detalles.producto'])->findOrFail($idPedido);
+        // CORREGIDO: Incluir relaciones necesarias para baldes
+        $pedido = pedidos::with(['detalles.producto', 'detalles.producto_base'])->findOrFail($idPedido);
         
         // VALIDAR QUE TODOS LOS PRODUCTOS ESTÉN LISTOS PARA ENTREGA
         $productosNoListos = $pedido->detalles->where('estado_item', '!=', 'LISTO_PARA_ENTREGA');
         
         if ($productosNoListos->count() > 0) {
-            $nombresProductos = $productosNoListos->pluck('producto.nombre')->join(', ');
+            // CORREGIDO: Obtener nombres según el tipo de producto
+            $nombresProductos = $productosNoListos->map(function($detalle) {
+                return $this->obtenerNombreDetalle($detalle);
+            })->join(', ');
+            
             return redirect()->route('vista.mozo_historial')
                 ->with('error', "No se puede finalizar el pedido. Los siguientes productos aún no están listos: {$nombresProductos}");
         }
@@ -39,13 +44,18 @@ class controller_facturacion extends Controller
 
     public function mostrar_facturacion($idPedido)
     {
-        $pedido = pedidos::with(['mesa', 'detalles.producto'])->findOrFail($idPedido);
+        // CORREGIDO: Incluir relaciones necesarias para baldes
+        $pedido = pedidos::with(['mesa', 'detalles.producto', 'detalles.producto_base'])->findOrFail($idPedido);
         
         // VERIFICAR QUE TODOS LOS PRODUCTOS ESTÉN LISTOS PARA ENTREGA
         $productosNoListos = $pedido->detalles->where('estado_item', '!=', 'LISTO_PARA_ENTREGA');
         
         if ($productosNoListos->count() > 0) {
-            $nombresProductos = $productosNoListos->pluck('producto.nombre')->join(', ');
+            // CORREGIDO: Obtener nombres según el tipo de producto
+            $nombresProductos = $productosNoListos->map(function($detalle) {
+                return $this->obtenerNombreDetalle($detalle);
+            })->join(', ');
+            
             return redirect()->route('vista.mozo_historial')
                 ->with('error', "No se puede facturar el pedido. Los siguientes productos aún no están listos: {$nombresProductos}");
         }
@@ -63,12 +73,12 @@ class controller_facturacion extends Controller
                 ->with('error', 'Solo se pueden facturar pedidos en estado PENDIENTE.');
         }
         
-        // Prepara los productos para JS
+        // CORREGIDO: Prepara los productos para JS incluyendo baldes
         $productosPedido = [];
         foreach ($pedido->detalles as $detalle) {
             $productosPedido[] = [
                 'id' => $detalle->id_pedido_detalle,
-                'nombre' => $detalle->producto->nombre,
+                'nombre' => $this->obtenerNombreDetalle($detalle),
                 'cantidad' => $detalle->cantidad,
                 'precio' => $detalle->precio_unitario_momento
             ];
@@ -80,7 +90,9 @@ class controller_facturacion extends Controller
     public function procesar_facturacion(Request $request, $idPedido)
     {
         Log::info('Payload recibido en facturación', $request->all());
-        $pedido = pedidos::with(['detalles.producto', 'mesa'])->findOrFail($idPedido);
+        
+        // CORREGIDO: Incluir relaciones necesarias para baldes
+        $pedido = pedidos::with(['detalles.producto', 'detalles.producto_base', 'mesa'])->findOrFail($idPedido);
 
         if ($request->input('division') == '1') {
             $divisiones = $request->input('divisiones');
@@ -456,7 +468,8 @@ class controller_facturacion extends Controller
     {
         require_once base_path('vendor/setasign/fpdf/fpdf.php');
         
-        $comprobante = comprobantes::with(['pedido.detalles.producto', 'pedido.mesa'])->findOrFail($idComprobante);
+        // CORREGIDO: Incluir relaciones para baldes
+        $comprobante = comprobantes::with(['pedido.detalles.producto', 'pedido.detalles.producto_base', 'pedido.mesa'])->findOrFail($idComprobante);
         
         // Crear PDF
         $pdf = new \FPDF();
@@ -515,7 +528,11 @@ class controller_facturacion extends Controller
         $pdf->SetFont('Arial', '', 9);
         foreach($comprobante->pedido->detalles as $detalle) {
             $pdf->Cell(15, 6, $detalle->cantidad, 1, 0, 'C');
-            $pdf->Cell(100, 6, utf8_decode($detalle->producto->nombre), 1, 0, 'L');
+            
+            // CORREGIDO: Obtener nombre según tipo de producto
+            $nombreProducto = $this->obtenerNombreDetalle($detalle);
+            $pdf->Cell(100, 6, utf8_decode($nombreProducto), 1, 0, 'L');
+            
             $pdf->Cell(35, 6, 'S/ ' . number_format($detalle->precio_unitario_momento, 2), 1, 0, 'R');
             $pdf->Cell(35, 6, 'S/ ' . number_format($detalle->subtotal, 2), 1, 1, 'R');
         }
@@ -622,7 +639,9 @@ class controller_facturacion extends Controller
         $comprobante = comprobantes::with([
             'pedido.mesa',
             'pedido.detalles.producto',
-            'pagosDetalle.detalle.producto' // Usa 'detalle' según tu modelo
+            'pedido.detalles.producto_base', // AGREGADO: Para baldes normales
+            'pagosDetalle.detalle.producto',
+            'pagosDetalle.detalle.producto_base' // AGREGADO: Para baldes en división
         ])->findOrFail($idComprobante);
 
         $comprobantesDivision = comprobantes::where('id_pedido', $comprobante->id_pedido)->get();
@@ -634,9 +653,12 @@ class controller_facturacion extends Controller
         if ($comprobante->pagosDetalle && $comprobante->pagosDetalle->count() > 0) {
             foreach ($comprobante->pagosDetalle as $pago) {
                 if ($pago->detalle) {
+                    // CORREGIDO: Obtener nombre según tipo de producto
+                    $nombreProducto = $this->obtenerNombreDetalle($pago->detalle);
+                    
                     $detallesPagados[] = [
-                        'producto' => $pago->detalle->producto->nombre,
                         'cantidad' => $pago->cantidad_item_pagada,
+                        'producto' => $nombreProducto,
                         'precio_unitario' => $pago->detalle->precio_unitario_momento,
                         'subtotal' => $pago->monto_pagado
                     ];
@@ -653,6 +675,18 @@ class controller_facturacion extends Controller
         ));
     }
 
+
+    // NUEVA FUNCIÓN HELPER PARA OBTENER NOMBRE DEL DETALLE
+    private function obtenerNombreDetalle($detalle)
+    {
+        if ($detalle->tipo_producto === 'balde_personalizado') {
+            return $detalle->nombre_producto_personalizado ?: 'Balde Personalizado';
+        } elseif ($detalle->tipo_producto === 'balde_normal') {
+            return $detalle->nombre_producto_personalizado ?: 'Balde Normal';
+        } else {
+            return $detalle->producto ? $detalle->producto->nombre : 'Producto no encontrado';
+        }
+    }
 
     private function generarCorrelativo($tipo, $serie)
     {

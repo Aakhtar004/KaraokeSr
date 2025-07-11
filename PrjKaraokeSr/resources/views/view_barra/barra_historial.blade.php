@@ -81,7 +81,39 @@
                                                         {{ $detalle->cantidad }}
                                                     @endif
                                                 </td>
-                                                <td data-nombre-producto="{{ $detalle->producto->nombre ?? 'Producto no encontrado' }}">{{ $detalle->producto->nombre ?? 'Producto no encontrado' }}</td>
+                                                {{-- CORREGIDO: Mostrar nombre según tipo de producto --}}
+                                                <td data-nombre-producto="{{ 
+                                                    $detalle->tipo_producto === 'balde_personalizado' ? 
+                                                        ($detalle->nombre_producto_personalizado ?: 'Balde Personalizado') :
+                                                        ($detalle->tipo_producto === 'balde_normal' ?
+                                                            ($detalle->nombre_producto_personalizado ?: 'Balde Normal') :
+                                                            ($detalle->producto->nombre ?? 'Producto no encontrado'))
+                                                }}">
+                                                    @if($detalle->tipo_producto === 'balde_personalizado')
+                                                        {{ $detalle->nombre_producto_personalizado ?: 'Balde Personalizado' }}
+                                                        @if($detalle->configuracion_especial)
+                                                            <br><small class="text-muted">
+                                                                @php
+                                                                    $config_detalles = [];
+                                                                    foreach($detalle->configuracion_especial as $cerveza_id => $config) {
+                                                                        $cerveza = \App\Models\productos::find($cerveza_id);
+                                                                        if($cerveza) {
+                                                                            $config_detalles[] = $config['cantidad'] . 'x ' . $cerveza->nombre;
+                                                                        }
+                                                                    }
+                                                                @endphp
+                                                                ({{ implode(', ', $config_detalles) }})
+                                                            </small>
+                                                        @endif
+                                                    @elseif($detalle->tipo_producto === 'balde_normal')
+                                                        {{ $detalle->nombre_producto_personalizado ?: 'Balde Normal' }}
+                                                        @if($detalle->producto_base)
+                                                            <br><small class="text-muted">(6x {{ $detalle->producto_base->nombre }})</small>
+                                                        @endif
+                                                    @else
+                                                        {{ $detalle->producto->nombre ?? 'Producto no encontrado' }}
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -166,9 +198,6 @@
         </div>
     </div>
 </div>
-
-
-
 
 <script>
 let pedidoDetalleIdActual = null;

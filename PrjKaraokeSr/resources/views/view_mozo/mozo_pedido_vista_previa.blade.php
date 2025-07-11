@@ -139,7 +139,15 @@ $haySlide = isset($comprobantesDivision) && $comprobantesDivision->count() > 1;
                                     @foreach($comprobante->pedido->detalles as $detalle)
                                     <tr>
                                         <td>{{ $detalle->cantidad }}</td>
-                                        <td>{{ $detalle->producto->nombre }}</td>
+                                        <td>
+                                            @if($detalle->tipo_producto === 'balde_personalizado')
+                                                {{ $detalle->nombre_producto_personalizado }}
+                                            @elseif($detalle->tipo_producto === 'balde_normal')
+                                                {{ $detalle->nombre_producto_personalizado }}
+                                            @else
+                                                {{ $detalle->producto->nombre ?? 'Producto no encontrado' }}
+                                            @endif
+                                        </td>
                                         <td>S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</td>
                                         <td>S/ {{ number_format($detalle->subtotal, 2) }}</td>
                                     </tr>

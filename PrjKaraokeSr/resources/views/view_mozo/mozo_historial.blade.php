@@ -69,6 +69,13 @@
 
                   // Verificar si tiene productos listos (no se puede eliminar)
                   $tieneProductosListos = $pedido->detalles->where('estado_item', 'LISTO_PARA_ENTREGA')->count() > 0;
+                  
+                  // Verificar si puede mostrar productos con nombres correctos
+                  $puedeModificar = $pedido->detalles->every(function($detalle) {
+                      return in_array($detalle->tipo_producto, ['normal', null]) || 
+                             ($detalle->tipo_producto === 'balde_normal' && $detalle->producto_base) ||
+                             $detalle->tipo_producto === 'balde_personalizado';
+                  });
                 @endphp
                 
                 @if(!$tienePagos && $estadoReal === 'PENDIENTE')
