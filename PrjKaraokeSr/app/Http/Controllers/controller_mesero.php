@@ -28,7 +28,7 @@ class controller_mesero extends Controller
         // Excluir pedidos que ya tienen comprobante (facturados)
         $pedidos = pedidos::with(['mesa', 'comprobante', 'detalles'])
             ->where('id_usuario_mesero', $idUsuario)
-            ->whereDoesntHave('comprobante') // Sirve para solo mostrar pedidos SIN comprobante
+            // ->whereDoesntHave('comprobante') // Sirve para solo mostrar pedidos SIN comprobante
             ->orderBy('fecha_hora_pedido', 'desc')
             ->get();
 

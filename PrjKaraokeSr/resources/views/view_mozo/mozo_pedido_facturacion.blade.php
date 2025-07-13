@@ -95,7 +95,7 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">¿En cuántas cuentas se divide?</label>
-                <input type="number" min="2" max="10" class="form-control" id="numCuentas" name="num_cuentas" value="2" required>
+                <input type="number" min="2" max="10" class="form-control" id="numCuentas" name="num_cuentas" value="2">
             </div>
             <div class="mb-3 text-center">
                 <button type="button" class="btn btn-primary" id="generarDivisionesBtn" disabled>Generar divisiones</button>
@@ -165,10 +165,7 @@
 const productosPedido = JSON.parse(document.getElementById('productosPedidoData').dataset.productos);
 
 let comprobanteId = null;
-// Esperamos a que el DOM esté completamente cargado para que el script funcione correctamente
-// Esto asegura que todos los elementos del DOM estén disponibles para manipulación
-// Usamos 'DOMContentLoaded' para evitar problemas de carga asíncrona
-// y asegurarnos de que el script se ejecute después de que el HTML esté completamente cargados
+
 document.addEventListener('DOMContentLoaded', function() {
     const tipoComprobanteSelect = document.getElementById('tipo_comprobante');
     const labelDocumento = document.getElementById('labelDocumento');
@@ -178,14 +175,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultadoConsulta = document.getElementById('resultadoConsulta');
     const infoRuc = document.getElementById('infoRuc');
     const nombreCliente = document.getElementById('nombre_cliente');
-    const grupoDni = tipoDoc ? tipoDoc.closest('.input-group') : null; // Agrupa el input y botón
+    const grupoDni = tipoDoc ? tipoDoc.closest('.input-group') : null;
 
     if (tipoComprobanteSelect) {
         tipoComprobanteSelect.addEventListener('change', function() {
             const tipo = this.value;
 
             if (tipo === 'nota_venta') {
-                // Ocultar grupo DNI y botón consultar
                 if (grupoDni) grupoDni.style.display = 'none';
                 if (resultadoConsulta) resultadoConsulta.style.display = 'none';
                 if (infoRuc) infoRuc.style.display = 'none';
@@ -196,15 +192,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     nombreCliente.style.display = '';
                 }
                 if (labelDocumento) labelDocumento.textContent = 'Nombre';
+                
+                // AGREGAR: Validar después de cambiar a nota de venta
+                setTimeout(function() {
+                    if (formDivision && formDivision.style.display === 'none') {
+                        const btnConfirmar = document.getElementById('btnConfirmar');
+                        const metodoPago = document.querySelector('select[name="metodo_pago[]"]');
+                        let esValido = tipoComprobanteSelect.value && metodoPago && metodoPago.value;
+                        if (btnConfirmar) btnConfirmar.disabled = !esValido;
+                    }
+                }, 50);
             } else {
-                // Mostrar grupo DNI y botón consultar
                 if (grupoDni) grupoDni.style.display = '';
                 
                 if (tipoDoc) tipoDoc.textContent = 'DNI';
                 if (documento) {
                     documento.placeholder = 'Ingrese DNI';
                     documento.value = '';
-                    nombreCliente.readOnly = true;
                 }
                 if (consultarBtn) consultarBtn.disabled = false;
                 
@@ -215,11 +219,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     nombreCliente.style.display = '';
                 }
                 if (labelDocumento) labelDocumento.textContent = 'Boleta';
+                
+                // AGREGAR: Validar después de cambiar a boleta
+                setTimeout(function() {
+                    if (formDivision && formDivision.style.display === 'none') {
+                        const btnConfirmar = document.getElementById('btnConfirmar');
+                        const metodoPago = document.querySelector('select[name="metodo_pago[]"]');
+                        let esValido = tipoComprobanteSelect.value && metodoPago && metodoPago.value;
+                        if (btnConfirmar) btnConfirmar.disabled = !esValido;
+                    }
+                }, 50);
             }
         });
     }
 
-    // FUNCIÓN UNIFICADA PARA CONSULTAR DNI  CON VALIDACIÓN MEJORADA
     if (consultarBtn) {
         consultarBtn.addEventListener('click', function() {
             const documento = document.getElementById('documento');
@@ -230,7 +243,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const nombreClienteInput = document.getElementById('nombre_cliente');
             const infoRucDiv = document.getElementById('infoRuc');
             
-            // Verificar que todos los elementos existen
             if (!documento || !tipoComprobante || !resultadoDiv || !nombreCompletoSpan || !nombreClienteInput || !infoRucDiv) {
                 console.error('Algunos elementos del DOM no fueron encontrados');
                 alert('Error interno: elementos de la interfaz no encontrados');
@@ -242,13 +254,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('Iniciando consulta...', { documento: documentoValue, tipoComprobante: tipoComprobanteValue });
             
-            // Determinar si es DNI o RUC y validar formato
             let esValido = false;
             let endpoint = '';
             let tipoBusqueda = '';
             
             if (tipoComprobanteValue === 'boleta') {
-                // Validar DNI (8 dígitos)
                 esValido = /^[0-9]{8}$/.test(documentoValue);
                 endpoint = '{{ route("api.consultar_dni") }}';
                 tipoBusqueda = 'dni';
@@ -258,7 +268,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
             } else {
-                // Validar RUC (11 dígitos, empezar con 10 o 20)
                 esValido = /^(10|20)[0-9]{9}$/.test(documentoValue);
                 endpoint = '{{ route("api.consultar_ruc") }}';
                 tipoBusqueda = 'ruc';
@@ -271,19 +280,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('📡 Endpoint a usar:', endpoint);
             
-            // Deshabilitar botón y mostrar estado de carga
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Consultando...';
             resultadoDiv.style.display = 'none';
             infoRucDiv.style.display = 'none';
             
-            // Preparar datos para enviar
             const requestData = {};
             requestData[tipoBusqueda] = documentoValue;
             
             console.log('📤 Datos a enviar:', requestData);
             
-            // Hacer petición AJAX al endpoint correspondiente
             fetch(endpoint, {
                 method: 'POST',
                 headers: {
@@ -296,7 +302,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => {
                 console.log('📡 Response status:', response.status);
                 
-                // Verificar si la respuesta es JSON válida
                 if (!response.ok) {
                     return response.text().then(text => {
                         console.error('Error response:', text);
@@ -323,11 +328,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (tipoBusqueda === 'dni') {
                         console.log('👤 Procesando resultado DNI');
                         
-                        // MANEJO CORRECTO PARA DNI
                         const nombreCompleto = data.data.nombre_completo || 'Nombre no disponible';
                         
                         nombreCompletoSpan.textContent = nombreCompleto;
                         nombreClienteInput.value = nombreCompleto;
+                        nombreClienteInput.readOnly = true;
+
                         infoRucDiv.style.display = 'none';
                         
                         console.log('👤 DNI procesado:', { nombre: nombreCompleto });
@@ -336,7 +342,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Procesando resultado RUC');
                         console.log('Datos RUC recibidos:', data.data);
                         
-                        // MANEJO CORRECTO PARA RUC - USAR ESTRUCTURA DE FACTILIZA
                         const razonSocial = data.data.razon_social || data.data.nombre_o_razon_social || 'Razón social no disponible';
                         const direccion = data.data.direccion || data.data.direccion_completa || 'Dirección no disponible';
                         const estado = data.data.estado || 'Estado no disponible';
@@ -351,11 +356,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             ruc
                         });
                         
-                        // Mostrar nombre/razón social principal
                         nombreCompletoSpan.textContent = razonSocial;
                         nombreClienteInput.value = razonSocial;
+                        nombreClienteInput.readOnly = true;
                         
-                        // Mostrar información adicional de la empresa
                         const direccionEmpresa = document.getElementById('direccionEmpresa');
                         const estadoEmpresa = document.getElementById('estadoEmpresa');
                         const condicionEmpresa = document.getElementById('condicionEmpresa');
@@ -381,20 +385,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             console.warn('Elemento condicionEmpresa no encontrado');
                         }
                         
-                        // Mostrar la sección de información adicional
                         infoRucDiv.style.display = 'block';
                         console.log(' Información RUC mostrada correctamente');
                     }
                     
-                    // Mostrar el resultado
                     resultadoDiv.style.display = 'block';
                     console.log('Resultado mostrado en interfaz');
                     
+                    // AGREGAR: Hacer readonly después de consulta exitosa y validar
+                    nombreClienteInput.readOnly = true;
+                    if (formDivision && formDivision.style.display === 'none') {
+                        const tipoComprobante = document.getElementById('tipo_comprobante');
+                        const metodoPago = document.querySelector('select[name="metodo_pago[]"]');
+                        const btnConfirmar = document.getElementById('btnConfirmar');
+                        
+                        let esValido = tipoComprobante && tipoComprobante.value && metodoPago && metodoPago.value;
+                        if (tipoComprobante.value === 'boleta' || tipoComprobante.value === 'nota_venta') {
+                            esValido = esValido && nombreClienteInput && nombreClienteInput.value.trim();
+                        }
+                        
+                        if (btnConfirmar) btnConfirmar.disabled = !esValido;
+                    }
+                    
                 } else {
-                    // Mostrar error de la API
                     console.error('❌ Error de API:', data.message);
                     alert('Error: ' + (data.message || 'Error desconocido'));
                     nombreClienteInput.value = 'Cliente';
+                    nombreClienteInput.readOnly = false; // Permitir edición manual si falla
                 }
             })
             .catch(error => {
@@ -405,9 +422,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 alert('Error de conexión al consultar el ' + (tipoBusqueda === 'dni' ? 'DNI' : 'RUC') + '. Revisa la consola para más detalles.');
                 nombreClienteInput.value = 'Cliente';
+                nombreClienteInput.readOnly = false; // Permitir edición manual si hay error
             })
             .finally(() => {
-                // Restaurar botón a estado original
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-search"></i> Consultar';
                 console.log('🔄 Botón restaurado');
@@ -415,36 +432,55 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Mostrar/ocultar formularios según división de cuenta
     const toggleDividirCuenta = document.getElementById('toggleDividirCuenta');
     const inputDivision = document.getElementById('inputDivision');
     const formDivision = document.getElementById('formDivision');
     const formSinDivision = document.getElementById('formSinDivision');
     if (toggleDividirCuenta && formDivision && formSinDivision) {
+        // AGREGAR: Inicialización correcta al cargar la página
+        const numCuentas = document.getElementById('numCuentas');
+        if (numCuentas) numCuentas.required = false; // Inicialmente sin required
+        
         toggleDividirCuenta.addEventListener('click', function() {
-            // Alternar entre los formularios
             const estaDividido = inputDivision.value === '1';
             if (estaDividido) {
-                // Volver a modo normal
+                // Cambiar a modo SIN división
                 inputDivision.value = '0';
                 formDivision.style.display = 'none';
                 formSinDivision.style.display = '';
-                // Restaurar required
                 document.querySelectorAll('#formSinDivision [name="nombre_cliente"], #formSinDivision [name="metodo_pago[]"]').forEach(el => el.required = true);
                 document.querySelectorAll('#formDivision [required]').forEach(el => el.required = false);
+                // CRÍTICO: Quitar required del campo num_cuentas
+                if (numCuentas) {
+                    numCuentas.required = false;
+                    numCuentas.removeAttribute('required');
+                }
             } else {
-                // Ir a modo división
+                // Cambiar a modo CON división
                 inputDivision.value = '1';
                 formDivision.style.display = '';
                 formSinDivision.style.display = 'none';
-                // Quitar required de los campos del form principal
                 document.querySelectorAll('#formSinDivision [required]').forEach(el => el.required = false);
-                // Puedes agregar required a los campos de división aquí si es necesario
+                // SOLO agregar required cuando realmente se muestra la división
+                if (numCuentas) {
+                    numCuentas.required = true;
+                    numCuentas.setAttribute('required', 'required');
+                }
             }
+            
+            // AGREGAR: Revalidar después del toggle
+            setTimeout(function() {
+                if (formDivision.style.display === 'none') {
+                    const tipoComprobante = document.getElementById('tipo_comprobante');
+                    const metodoPago = document.querySelector('select[name="metodo_pago[]"]');
+                    const btnConfirmar = document.getElementById('btnConfirmar');
+                    let esValido = tipoComprobante && tipoComprobante.value && metodoPago && metodoPago.value;
+                    if (btnConfirmar) btnConfirmar.disabled = !esValido;
+                }
+            }, 100);
         });
     }
 
-    // Agregar métodos de pago adicionales
     const addMetodoPago = document.getElementById('addMetodoPago');
     if (addMetodoPago) {
         addMetodoPago.addEventListener('click', function(e) {
@@ -473,7 +509,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Generar números aleatorios
     const randomBtn = document.getElementById('randomBtn');
     if (randomBtn) {
         randomBtn.addEventListener('click', function() {
@@ -483,23 +518,19 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tipoComprobante && documento) {
                 const tipo = tipoComprobante.value;
                 if (tipo === 'factura') {
-                    // Generar RUC aleatorio válido (empezar con 20)
                     const rucAleatorio = '20' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
                     documento.value = rucAleatorio;
                 } else {
-                    // Generar DNI aleatorio
                     documento.value = Math.floor(10000000 + Math.random() * 90000000);
                 }
             }
         });
     }
 
-    // Procesar formulario de facturación
     const facturacionForm = document.getElementById('facturacionForm');
     if (facturacionForm) {
         facturacionForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // <-- Esto es fundamental
-            // Validación extra para divisiones
+            e.preventDefault(); 
             if (inputDivision.value === '1') {
                 let valido = true;
                 document.querySelectorAll('.tipo-comprobante-division').forEach(function(select) {
@@ -541,7 +572,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (data.comprobante_id) {
                     comprobanteId = data.comprobante_id;
-                    mostrarModalAcciones(); // SIEMPRE muestra el modal de éxito
+                    mostrarModalAcciones();
                 } else if (data.success && data.redirect_url) {
                     window.location.href = data.redirect_url;
                 } else {
@@ -560,14 +591,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const modoDivisionRadios = document.querySelectorAll('input[name="modoDivision"]');
     const bloquesDivision = document.getElementById('bloquesDivision');
 
-    // Habilita el botón solo si el número es válido
     if (numCuentasInput && generarDivisionesBtn) {
         numCuentasInput.addEventListener('input', function() {
             generarDivisionesBtn.disabled = !(parseInt(numCuentasInput.value) >= 2 && parseInt(numCuentasInput.value) <= 10);
         });
     }
 
-    // Al cambiar el modo de división, limpiar los bloques
     if (modoDivisionRadios && bloquesDivision) {
         modoDivisionRadios.forEach(radio => {
             radio.addEventListener('change', function() {
@@ -576,7 +605,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Al hacer clic en el botón, generar los bloques según el modo
     if (generarDivisionesBtn && numCuentasInput && bloquesDivision) {
         generarDivisionesBtn.addEventListener('click', function() {
             const n = parseInt(numCuentasInput.value);
@@ -610,11 +638,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </button>
                                     </div>
                                     <div class="mb-2">
-                                        <input type="text" class="form-control nombre-division" name="divisiones[${i-1}][nombre]" placeholder="Nombre del cliente" data-idx="${i-1}" readonly>
+                                        <input type="text" class="form-control nombre-boleta-division" name="divisiones[${i-1}][nombre_boleta]" placeholder="Nombre del cliente" data-idx="${i-1}" readonly>
                                     </div>
                                 </div>
                                 <div class="mb-2 campo-nombre-division" id="campoNombreDivision${i-1}" style="display:none;">
-                                    <input type="text" class="form-control nombre-division" name="divisiones[${i-1}][nombre]" placeholder="Nombre del cliente" data-idx="${i-1}" required>
+                                    <input type="text" class="form-control nombre-notaventa-division" name="divisiones[${i-1}][nombre_notaventa]" placeholder="Nombre del cliente" data-idx="${i-1}" required>
                                 </div>
                                 <div class="mb-2">
                                     <label>Método de pago</label>
@@ -641,16 +669,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    
-    
-
-    // Generar tabla de división por ítem
     function renderTablaDivisionItems(nCuentas) {
         const container = document.getElementById('tablaDivisionItemsContainer');
         if (!container) return;
         container.innerHTML = '';
 
-        // Cabecera
         let html = `<table class="table table-bordered align-middle text-center">
             <thead>
                 <tr>
@@ -661,14 +684,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         html += `</tr></thead><tbody>`;
 
-        // Filas de productos
         productosPedido.forEach((prod, idx) => {
             for (let q = 1; q <= prod.cantidad; q++) {
                 html += `<tr>
                     <td>${prod.nombre}</td>
                     <td>S/ ${parseFloat(prod.precio).toFixed(2)}</td>`;
                 for (let c = 0; c < nCuentas; c++) {
-                    // --- CAMBIO: nombre del checkbox para backend ---
                     html += `<td>
                         <input type="checkbox" class="chk-prod-cuenta" 
                             data-prod="${prod.id}" data-idx="${idx}" data-cuenta="${c}" data-q="${q}"
@@ -681,7 +702,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         html += `</tbody></table>`;
 
-        // Espacios para datos de clientes y montos
         html += `<div class="row mt-3" id="datosClientesDivision">`;
         for (let c = 0; c < nCuentas; c++) {
             html += `
@@ -705,11 +725,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </button>
                             </div>
                             <div class="mb-2">
-                                <input type="text" class="form-control nombre-division" name="divisiones[${c}][nombre]" placeholder="Nombre del cliente" data-idx="${c}" readonly>
+                                <input type="text" class="form-control nombre-boleta-division" name="divisiones[${c}][nombre_boleta]" placeholder="Nombre del cliente" data-idx="${c}" readonly>
                             </div>
                         </div>
                         <div class="mb-2 campo-nombre-division" id="campoNombreDivision${c}" style="display:none;">
-                            <input type="text" class="form-control nombre-division" name="divisiones[${c}][nombre]" placeholder="Nombre del cliente" data-idx="${c}">
+                            <input type="text" class="form-control nombre-notaventa-division" name="divisiones[${c}][nombre_notaventa]" placeholder="Nombre del cliente" data-idx="${c}">
                         </div>
                         <div class="mb-2">
                             <label>Método de pago</label>
@@ -735,7 +755,6 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = html;
         container.style.display = '';
 
-        // Inicializar comportamiento de comprobante/cliente
         document.querySelectorAll('.tipo-comprobante-division').forEach(function(select) {
             select.addEventListener('change', function() {
                 const idx = this.getAttribute('data-idx');
@@ -756,12 +775,11 @@ document.addEventListener('DOMContentLoaded', function() {
             select.dispatchEvent(new Event('change'));
         });
 
-        // Consulta de DNI por bloque
         document.querySelectorAll('.btn-consultar-dni').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 const idx = this.getAttribute('data-idx');
                 const inputDni = document.querySelector('.dni-division[data-idx="'+idx+'"]');
-                const inputNombre = document.querySelector('.nombre-division[data-idx="'+idx+'"][readonly]');
+                const inputNombre = document.querySelector('.nombre-boleta-division[data-idx="'+idx+'"]');
                 const dni = inputDni.value.trim();
                 if (!/^[0-9]{8}$/.test(dni)) {
                     alert('Ingrese un DNI válido de 8 dígitos');
@@ -798,10 +816,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Listener para checkboxes: solo uno por fila y calcular montos
         document.querySelectorAll('.chk-prod-cuenta').forEach(chk => {
             chk.addEventListener('change', function() {
-                // Solo uno por fila
                 const prod = this.getAttribute('data-prod');
                 const idx = this.getAttribute('data-idx');
                 const q = this.getAttribute('data-q');
@@ -817,7 +833,6 @@ document.addEventListener('DOMContentLoaded', function() {
         calcularMontosYValidar(nCuentas);
     }
 
-    // Calcular montos y validar que cada producto esté asignado a una sola cuenta
     function calcularMontosYValidar(nCuentas) {
         let error = '';
         let montos = Array(nCuentas).fill(0);
@@ -845,17 +860,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Mostrar montos en inputs
         document.querySelectorAll('.monto-division').forEach((input, idx) => {
             input.value = montos[idx].toFixed(2);
         });
 
-        // Mostrar error y habilitar/deshabilitar botón
         document.getElementById('errorDivisionItems').textContent = error;
         document.getElementById('btnConfirmar').disabled = !!error;
     }
 
-    // Al hacer clic en "Generar divisiones", si es por ítem, muestra la tabla
     if (generarDivisionesBtn && numCuentasInput) {
         generarDivisionesBtn.addEventListener('click', function() {
             const n = parseInt(numCuentasInput.value);
@@ -868,21 +880,84 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const btnConfirmar = document.getElementById('btnConfirmar');
-
     const enviarCorreoBtn = document.getElementById('enviarCorreoBtn');
 
     if (facturacionForm && btnConfirmar) {
         facturacionForm.addEventListener('input', function() {
             if (formDivision && formDivision.style.display === 'none') {
-                btnConfirmar.disabled = !facturacionForm.checkValidity();
+                const tipoComprobante = document.getElementById('tipo_comprobante');
+                const metodoPago = document.querySelector('select[name="metodo_pago[]"]');
+                const documento = document.getElementById('documento');
+                const nombreCliente = document.getElementById('nombre_cliente');
+                
+                let esValido = true;
+                
+                if (!tipoComprobante || !tipoComprobante.value || !metodoPago || !metodoPago.value) {
+                    esValido = false;
+                }
+                
+                if (tipoComprobante && tipoComprobante.value) {
+                    if (tipoComprobante.value === 'boleta') {
+                        if (documento && documento.value.trim() !== '') {
+                            if (!/^[0-9]{8}$/.test(documento.value.trim())) {
+                                esValido = false;
+                            }
+                        }
+                        if (!nombreCliente || !nombreCliente.value.trim()) {
+                            esValido = false;
+                        }
+                    } else if (tipoComprobante.value === 'nota_venta') {
+                        if (!nombreCliente || !nombreCliente.value.trim()) {
+                            esValido = false;
+                        }
+                    }
+                }
+                
+                btnConfirmar.disabled = !esValido;
             }
         });
+        
+        facturacionForm.addEventListener('change', function() {
+            if (formDivision && formDivision.style.display === 'none') {
+                const tipoComprobante = document.getElementById('tipo_comprobante');
+                const metodoPago = document.querySelector('select[name="metodo_pago[]"]');
+                const documento = document.getElementById('documento');
+                const nombreCliente = document.getElementById('nombre_cliente');
+                
+                let esValido = true;
+                
+                if (!tipoComprobante || !tipoComprobante.value || !metodoPago || !metodoPago.value) {
+                    esValido = false;
+                }
+                
+                if (tipoComprobante && tipoComprobante.value) {
+                    if (tipoComprobante.value === 'boleta') {
+                        if (documento && documento.value.trim() !== '') {
+                            if (!/^[0-9]{8}$/.test(documento.value.trim())) {
+                                esValido = false;
+                            }
+                        }
+                        if (!nombreCliente || !nombreCliente.value.trim()) {
+                            esValido = false;
+                        }
+                    } else if (tipoComprobante.value === 'nota_venta') {
+                        if (!nombreCliente || !nombreCliente.value.trim()) {
+                            esValido = false;
+                        }
+                    }
+                }
+                
+                btnConfirmar.disabled = !esValido;
+            }
+        });
+        
         if (formDivision && formDivision.style.display === 'none') {
-            btnConfirmar.disabled = !facturacionForm.checkValidity();
+            const tipoComprobante = document.getElementById('tipo_comprobante');
+            const metodoPago = document.querySelector('select[name="metodo_pago[]"]');
+            btnConfirmar.disabled = !(tipoComprobante && tipoComprobante.value && metodoPago && metodoPago.value);
         }
     }
     
-    // Inicializar comportamiento de cada bloque de división
     document.querySelectorAll('.tipo-comprobante-division').forEach(function(select) {
         select.addEventListener('change', function() {
             const idx = this.getAttribute('data-idx');
@@ -900,16 +975,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 inputNombre.required = true;
             }
         });
-        // Llama una vez para el estado inicial
         select.dispatchEvent(new Event('change'));
     });
 
-    // Consulta de DNI por bloque
     document.querySelectorAll('.btn-consultar-dni').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const idx = this.getAttribute('data-idx');
             const inputDni = document.querySelector('.dni-division[data-idx="'+idx+'"]');
-            const inputNombre = document.querySelector('.nombre-division[data-idx="'+idx+'"][readonly]');
+            const inputNombre = document.querySelector('.nombre-boleta-division[data-idx="'+idx+'"]');
             const dni = inputDni.value.trim();
             if (!/^[0-9]{8}$/.test(dni)) {
                 alert('Ingrese un DNI válido de 8 dígitos');
@@ -946,8 +1019,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-
-
     if (enviarCorreoBtn) {
         enviarCorreoBtn.addEventListener('click', function() {
             const form = document.getElementById('enviarCorreoForm');
@@ -983,35 +1054,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    // Asegurar que num_cuentas no tenga required inicialmente
+    const numCuentasInit = document.getElementById('numCuentas');
+    if (numCuentasInit) {
+        numCuentasInit.required = false;
+        numCuentasInit.removeAttribute('required');
+        console.log('✅ Required removido de num_cuentas');
+    }
 
+    // También asegurar que esté sin required en la inicialización
+    setTimeout(function() {
+        const numCuentas2 = document.getElementById('numCuentas');
+        if (numCuentas2 && numCuentas2.hasAttribute('required')) {
+            numCuentas2.required = false;
+            numCuentas2.removeAttribute('required');
+            console.log('✅ Required removido de num_cuentas (verificación)');
+        }
+    }, 100);
 
+});
 
-}); // Fin de DOMContentLoaded
 
 function mostrarModalAcciones() {
-    // Mostrar modal de éxito
     const modalElement = document.getElementById('modalExitoComprobante');
     if (modalElement && typeof bootstrap !== 'undefined') {
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
 
-        // Al cerrar el modal (por cualquier medio), redirigir a la vista previa
         modalElement.addEventListener('hidden.bs.modal', function handler() {
             const vistaPrevia = "{{ route('factura.vista_previa', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
             window.location.href = vistaPrevia;
-            // Remover el listener para evitar múltiples redirecciones
             modalElement.removeEventListener('hidden.bs.modal', handler);
         });
 
-        // Al hacer clic en aceptar, cerrar el modal (lo que dispara el evento anterior)
         document.getElementById('btnAceptarExito').onclick = function() {
             modal.hide();
         };
     } else {
-        // Fallback si no hay modal: redirigir directamente
         const vistaPrevia = "{{ route('factura.vista_previa', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
         window.location.href = vistaPrevia;
     }
 }
+
+
 </script>
 @endsection

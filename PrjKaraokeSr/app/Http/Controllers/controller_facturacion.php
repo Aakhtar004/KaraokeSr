@@ -101,6 +101,9 @@ class controller_facturacion extends Controller
             try {
                 $comprobantes = [];
                 $total = 0;
+                
+                // AGREGADO: Variable para capturar el primer nombre de cliente válido
+                $nombreClientePedido = null;
 
                 // --- NUEVO: Procesar división por ítem correctamente ---
                 if ($modo === 'item') {
@@ -163,8 +166,20 @@ class controller_facturacion extends Controller
 
                         // Datos de cliente
                         $tipo = $div['tipo_comprobante'];
-                        $nombre = $tipo === 'nota_venta' ? ($div['nombre'] ?? null) : ($div['nombre'] ?? null);
-                        $dni = $tipo === 'boleta' ? ($div['dni'] ?? null) : null;
+
+                        // CAMBIO: Obtener nombre desde el campo correcto según el tipo
+                        if ($tipo === 'boleta') {
+                            $nombre = $div['nombre_boleta'] ?? null;
+                            $dni = $div['dni'] ?? null;
+                        } else {
+                            $nombre = $div['nombre_notaventa'] ?? null;
+                            $dni = null;
+                        }
+                        
+                        // FIX: Capturar primer nombre válido para actualizar el pedido
+                        if (!$nombreClientePedido && !empty($nombre) && $nombre !== 'Cliente') {
+                            $nombreClientePedido = $nombre;
+                        }
 
                         $comprobante = comprobantes::create([
                             'id_pedido' => $pedido->id_pedido,
@@ -223,6 +238,11 @@ class controller_facturacion extends Controller
 
                         $nombre = $tipo === 'nota_venta' ? ($div['nombre'] ?? null) : ($div['nombre'] ?? null);
                         $dni = $tipo === 'boleta' ? ($div['dni'] ?? null) : null;
+                        
+                        // FIX: Capturar primer nombre válido para actualizar el pedido
+                        if (!$nombreClientePedido && !empty($nombre) && $nombre !== 'Cliente') {
+                            $nombreClientePedido = $nombre;
+                        }
 
                         $comprobante = comprobantes::create([
                             'id_pedido' => $pedido->id_pedido,
@@ -255,6 +275,12 @@ class controller_facturacion extends Controller
                         throw new \Exception('La suma de los montos no coincide con el total del pedido.');
                     }
                 }
+                
+                // FIX: Actualizar el nombre del cliente en el pedido
+                if ($nombreClientePedido) {
+                    $pedido->update(['nombre_cliente' => $nombreClientePedido]);
+                }
+                
                 // ACTUALIZAR ESTADO DEL PEDIDO Y LIBERAR LA MESA (DIVISIÓN)
                 $pedido->update(['estado_pedido' => 'PAGADO']);
                 $mesa = $pedido->mesa;
