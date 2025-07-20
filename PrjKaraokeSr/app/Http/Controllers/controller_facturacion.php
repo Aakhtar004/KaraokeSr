@@ -493,126 +493,214 @@ class controller_facturacion extends Controller
     public function generar_pdf_comprobante($idComprobante)
     {
         require_once base_path('vendor/setasign/fpdf/fpdf.php');
+    
+        try {
+            // CORREGIDO: Incluir relaciones específicas para evitar conflictos
+            $comprobante = comprobantes::with([
+                'pedido.detalles' => function($query) {
+                    $query->with(['producto', 'producto_base']);
+                },
+                'pedido.mesa',
+                'pagosDetalle' => function($query) {
+                    $query->with([
+                        'detalle' => function($subQuery) {
+                            $subQuery->with(['producto', 'producto_base']);
+                        }
+                    ]);
+                }
+            ])->findOrFail($idComprobante);
         
-        // CORREGIDO: Incluir relaciones para baldes
-        $comprobante = comprobantes::with(['pedido.detalles.producto', 'pedido.detalles.producto_base', 'pedido.mesa'])->findOrFail($idComprobante);
+            // Crear PDF
+            $pdf = new \FPDF();
+            $pdf->AddPage();
         
-        // Crear PDF
-        $pdf = new \FPDF();
-        $pdf->AddPage();
+            // Encabezado
+            $pdf->SetFont('Arial', 'B', 14);
+            $pdf->Cell(0, 10, utf8_decode('RESTOBAR SALÓN ROJO'), 0, 1, 'C');
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(0, 5, utf8_decode('KARAOKE'), 0, 1, 'C');
+            $pdf->Cell(0, 5, utf8_decode('RUC: 10255667781'), 0, 1, 'C');
+            $pdf->Cell(0, 5, utf8_decode('Gral Deustua 160, Tacna 23001'), 0, 1, 'C');
+            $pdf->Ln(5);
         
-        // Encabezado
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->Cell(0, 10, utf8_decode('RESTOBAR SALÓN ROJO'), 0, 1, 'C');
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 5, utf8_decode('KARAOKE'), 0, 1, 'C');
-        $pdf->Cell(0, 5, utf8_decode('RUC: 10255667781'), 0, 1, 'C');
-        $pdf->Cell(0, 5, utf8_decode('Gral Deustua 160, Tacna 23001'), 0, 1, 'C');
-        $pdf->Ln(5);
+            // Tipo de comprobante
+            $pdf->SetFont('Arial', 'B', 12);
+            $pdf->Cell(0, 8, utf8_decode(strtoupper($comprobante->tipo_comprobante) . ' ELECTRÓNICA'), 0, 1, 'C');
+            $pdf->Cell(0, 8, utf8_decode($comprobante->serie_comprobante . '-' . $comprobante->numero_correlativo_comprobante), 0, 1, 'C');
+            $pdf->Ln(5);
         
-        // Tipo de comprobante
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(0, 8, utf8_decode(strtoupper($comprobante->tipo_comprobante) . ' ELECTRÓNICA'), 0, 1, 'C');
-        $pdf->Cell(0, 8, utf8_decode($comprobante->serie_comprobante . '-' . $comprobante->numero_correlativo_comprobante), 0, 1, 'C');
-        $pdf->Ln(5);
+            // Datos del cliente
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell(30, 6, 'CLIENTE:', 0);
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(0, 6, utf8_decode($comprobante->nombre_razon_social_cliente), 0, 1);
         
-        // Datos del cliente
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(30, 6, 'CLIENTE:', 0);
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, utf8_decode($comprobante->nombre_razon_social_cliente), 0, 1);
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell(30, 6, utf8_decode($comprobante->tipo_documento_cliente . ':'), 0);
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(0, 6, $comprobante->numero_documento_cliente ?: '', 0, 1);
         
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(30, 6, utf8_decode($comprobante->tipo_documento_cliente . ':'), 0);
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, $comprobante->numero_documento_cliente, 0, 1);
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell(30, 6, 'FECHA:', 0);
+            $pdf->SetFont('Arial', '', 10);
         
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(30, 6, 'FECHA:', 0);
-        $pdf->SetFont('Arial', '', 10);
+            if($comprobante->fecha_emision instanceof \Carbon\Carbon) {
+                $pdf->Cell(0, 6, $comprobante->fecha_emision->format('d/m/Y H:i'), 0, 1);
+            } else {
+                $pdf->Cell(0, 6, \Carbon\Carbon::parse($comprobante->fecha_emision)->format('d/m/Y H:i'), 0, 1);
+            }
         
-        if($comprobante->fecha_emision instanceof \Carbon\Carbon) {
-            $pdf->Cell(0, 6, $comprobante->fecha_emision->format('d/m/Y H:i'), 0, 1);
-        } else {
-            $pdf->Cell(0, 6, \Carbon\Carbon::parse($comprobante->fecha_emision)->format('d/m/Y H:i'), 0, 1);
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell(30, 6, 'MESA:', 0);
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(0, 6, $comprobante->pedido->mesa->numero_mesa ?? '-', 0, 1);
+        
+            $pdf->Ln(5);
+        
+            // Tabla de productos
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(15, 7, 'CANT.', 1, 0, 'C');
+            $pdf->Cell(100, 7, utf8_decode('DESCRIPCIÓN'), 1, 0, 'C');
+            $pdf->Cell(35, 7, 'P. UNIT.', 1, 0, 'C');
+            $pdf->Cell(35, 7, 'IMPORTE', 1, 1, 'C');
+        
+            $pdf->SetFont('Arial', '', 9);
+        
+            // CORREGIDO: Usar la misma lógica que la vista previa para pedidos divididos
+            if ($comprobante->pagosDetalle && $comprobante->pagosDetalle->count() > 0) {
+                // Si hay división de cuenta, mostrar solo productos pagados por este comprobante
+                // Agrupar pagos por detalle para manejar cantidades correctamente
+                $pagosPorDetalle = [];
+                
+                foreach ($comprobante->pagosDetalle as $pago) {
+                    if ($pago->detalle) {
+                        $idDetalle = $pago->detalle->id_pedido_detalle;
+                        
+                        if (!isset($pagosPorDetalle[$idDetalle])) {
+                            $pagosPorDetalle[$idDetalle] = [
+                                'detalle' => $pago->detalle,
+                                'cantidad_total' => 0,
+                                'monto_total' => 0
+                            ];
+                        }
+                        
+                        $pagosPorDetalle[$idDetalle]['cantidad_total'] += $pago->cantidad_item_pagada;
+                        $pagosPorDetalle[$idDetalle]['monto_total'] += $pago->monto_pagado;
+                    }
+                }
+                
+                // Mostrar productos agrupados con cantidades correctas
+                foreach ($pagosPorDetalle as $pagoData) {
+                    $pdf->Cell(15, 6, $pagoData['cantidad_total'], 1, 0, 'C');
+                    
+                    // Obtener nombre según tipo de producto
+                    $nombreProducto = $this->obtenerNombreDetalle($pagoData['detalle']);
+                    $pdf->Cell(100, 6, utf8_decode($nombreProducto), 1, 0, 'L');
+                    
+                    $pdf->Cell(35, 6, 'S/ ' . number_format($pagoData['detalle']->precio_unitario_momento, 2), 1, 0, 'R');
+                    $pdf->Cell(35, 6, 'S/ ' . number_format($pagoData['monto_total'], 2), 1, 1, 'R');
+                }
+            } else {
+                // Si NO hay división, mostrar todos los productos del pedido (lógica original)
+                foreach($comprobante->pedido->detalles as $detalle) {
+                    $pdf->Cell(15, 6, $detalle->cantidad, 1, 0, 'C');
+                    
+                    // Obtener nombre según tipo de producto
+                    $nombreProducto = $this->obtenerNombreDetalle($detalle);
+                    $pdf->Cell(100, 6, utf8_decode($nombreProducto), 1, 0, 'L');
+                    
+                    $pdf->Cell(35, 6, 'S/ ' . number_format($detalle->precio_unitario_momento, 2), 1, 0, 'R');
+                    $pdf->Cell(35, 6, 'S/ ' . number_format($detalle->subtotal, 2), 1, 1, 'R');
+                }
+            }
+        
+            // Totales
+            $pdf->Ln(5);
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell(150, 6, 'SUBTOTAL:', 0, 0, 'R');
+            $pdf->Cell(35, 6, 'S/ ' . number_format($comprobante->subtotal_comprobante, 2), 0, 1, 'R');
+        
+            $pdf->Cell(150, 6, 'IGV (18%):', 0, 0, 'R');
+            $pdf->Cell(35, 6, 'S/ ' . number_format($comprobante->monto_igv, 2), 0, 1, 'R');
+        
+            $pdf->SetFont('Arial', 'B', 12);
+            $pdf->Cell(150, 8, 'TOTAL:', 0, 0, 'R');
+            $pdf->Cell(35, 8, 'S/ ' . number_format($comprobante->monto_total_comprobante, 2), 0, 1, 'R');
+        
+            // Pie de página
+            $pdf->Ln(10);
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell(0, 5, utf8_decode('Gracias por su preferencia'), 0, 1, 'C');
+            $pdf->Cell(0, 5, utf8_decode('Este documento es una representación del comprobante electrónico'), 0, 1, 'C');
+            $pdf->Cell(0, 5, utf8_decode('Generado automáticamente por el sistema de Karaoke Senior'), 0, 1, 'C');
+        
+            // Generar el PDF y devolverlo como respuesta
+            return $pdf->Output('S', 'comprobante_' . $comprobante->serie_comprobante . '-' . $comprobante->numero_correlativo_comprobante . '.pdf');
+        } catch (\Exception $e) {
+            throw new \Exception('Error al generar PDF: ' . $e->getMessage());
         }
-        
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(30, 6, 'MESA:', 0);
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, $comprobante->pedido->mesa->numero_mesa ?? '-', 0, 1);
-        
-        $pdf->Ln(5);
-        
-        // Tabla de productos
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(15, 7, 'CANT.', 1, 0, 'C');
-        $pdf->Cell(100, 7, utf8_decode('DESCRIPCIÓN'), 1, 0, 'C');
-        $pdf->Cell(35, 7, 'P. UNIT.', 1, 0, 'C');
-        $pdf->Cell(35, 7, 'IMPORTE', 1, 1, 'C');
-        
-        $pdf->SetFont('Arial', '', 9);
-        foreach($comprobante->pedido->detalles as $detalle) {
-            $pdf->Cell(15, 6, $detalle->cantidad, 1, 0, 'C');
-            
-            // CORREGIDO: Obtener nombre según tipo de producto
-            $nombreProducto = $this->obtenerNombreDetalle($detalle);
-            $pdf->Cell(100, 6, utf8_decode($nombreProducto), 1, 0, 'L');
-            
-            $pdf->Cell(35, 6, 'S/ ' . number_format($detalle->precio_unitario_momento, 2), 1, 0, 'R');
-            $pdf->Cell(35, 6, 'S/ ' . number_format($detalle->subtotal, 2), 1, 1, 'R');
-        }
-        
-        // Totales
-        $pdf->Ln(5);
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(150, 6, 'SUBTOTAL:', 0, 0, 'R');
-        $pdf->Cell(35, 6, 'S/ ' . number_format($comprobante->subtotal_comprobante, 2), 0, 1, 'R');
-        
-        $pdf->Cell(150, 6, 'IGV (18%):', 0, 0, 'R');
-        $pdf->Cell(35, 6, 'S/ ' . number_format($comprobante->monto_igv, 2), 0, 1, 'R');
-        
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(150, 8, 'TOTAL:', 0, 0, 'R');
-        $pdf->Cell(35, 8, 'S/ ' . number_format($comprobante->monto_total_comprobante, 2), 0, 1, 'R');
-        
-        // Pie de página
-        $pdf->Ln(10);
-        $pdf->SetFont('Arial', '', 8);
-        $pdf->Cell(0, 5, utf8_decode('Gracias por su preferencia'), 0, 1, 'C');
-        $pdf->Cell(0, 5, utf8_decode('Este documento es una representación del comprobante electrónico'), 0, 1, 'C');
-        $pdf->Cell(0, 5, utf8_decode('Generado automáticamente por el sistema de Karaoke Senior'), 0, 1, 'C');
-        
-        // Generar el PDF y devolverlo como respuesta
-        return $pdf->Output('S', 'comprobante_' . $comprobante->serie_comprobante . '-' . $comprobante->numero_correlativo_comprobante . '.pdf');
     }
 
     public function enviar_correo(Request $request, $idComprobante)
     {
-        $comprobante = comprobantes::with(['pedido.detalles.producto'])->findOrFail($idComprobante);
-        
-        $request->validate([
-            'dni_correo' => 'required|string',
-            'email' => 'required|email',
-        ]);
-
         try {
-            // Generar el contenido HTML del correo
-            $htmlContent = view('emails.comprobante', compact('comprobante'))->render();
+            // CORREGIDO: Cargar relaciones de forma más específica para evitar conflictos
+            $comprobante = comprobantes::with([
+                'pedido.mesa',
+                'pedido.detalles' => function($query) {
+                    $query->with(['producto', 'producto_base']);
+                },
+                'pagosDetalle' => function($query) {
+                    $query->with([
+                        'detalle' => function($subQuery) {
+                            $subQuery->with(['producto', 'producto_base']);
+                        }
+                    ]);
+                }
+            ])->findOrFail($idComprobante);
             
-            // Generar el PDF del comprobante
-            $pdfContent = $this->generar_pdf_comprobante($idComprobante);
-            $pdfFileName = 'comprobante_' . $comprobante->serie_comprobante . '-' . $comprobante->numero_correlativo_comprobante . '.pdf';
+            $request->validate([
+                'dni_correo' => 'required|string',
+                'email' => 'required|email',
+            ]);
+
+            // CORREGIDO: Generar el contenido HTML del correo con manejo de errores
+            try {
+                $htmlContent = view('emails.comprobante', compact('comprobante'))->render();
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al generar el contenido del correo: ' . $e->getMessage()
+                ], 500);
+            }
             
-            // Usar el servicio de Resend para enviar el correo con el PDF adjunto
-            $resendService = new \App\Services\ApiResendService();
-            $result = $resendService->sendEmailWithAttachment(
-                $request->email,
-                'Comprobante de Pago - ' . $comprobante->serie_comprobante . '-' . $comprobante->numero_correlativo_comprobante,
-                $htmlContent,
-                $pdfContent,
-                $pdfFileName
-            );
+            // CORREGIDO: Generar el PDF del comprobante con manejo de errores
+            try {
+                $pdfContent = $this->generar_pdf_comprobante($idComprobante);
+                $pdfFileName = 'comprobante_' . $comprobante->serie_comprobante . '-' . $comprobante->numero_correlativo_comprobante . '.pdf';
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al generar el PDF: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            // CORREGIDO: Usar el servicio de Resend con manejo de errores mejorado
+            try {
+                $resendService = new \App\Services\ApiResendService();
+                $result = $resendService->sendEmailWithAttachment(
+                    $request->email,
+                    'Comprobante de Pago - ' . $comprobante->serie_comprobante . '-' . $comprobante->numero_correlativo_comprobante,
+                    $htmlContent,
+                    $pdfContent,
+                    $pdfFileName
+                );
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error en el servicio de envío: ' . $e->getMessage()
+                ], 500);
+            }
             
             if ($result['success']) {
                 return response()->json([
@@ -627,15 +715,21 @@ class controller_facturacion extends Controller
                     'error' => $result['error'] ?? null
                 ], 500);
             }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error al enviar correo', [
-                'error' => $e->getMessage(),
-                'comprobante_id' => $idComprobante
-            ]);
-            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al enviar el correo: ' . $e->getMessage()
+                'message' => 'Comprobante no encontrado'
+            ], 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos de entrada inválidos',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor: ' . $e->getMessage()
             ], 500);
         }
     }

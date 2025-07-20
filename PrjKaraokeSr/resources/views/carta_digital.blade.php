@@ -184,7 +184,7 @@
                                     @else
                                         <span class="text-{{ isset($producto->stock) && $producto->stock > 5 ? 'green' : (isset($producto->stock) && $producto->stock > 0 ? 'yellow' : 'red') }}-600">
                                             @if(isset($producto->stock) && $producto->stock > 0)
-                                                {{ $producto->stock }} disponibles
+                                                Disponible
                                             @else
                                                 Agotado
                                             @endif

@@ -108,14 +108,62 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($comprobante->pedido->detalles as $detalle)
-            <tr>
-                <td>{{ $detalle->cantidad }}</td>
-                <td>{{ $detalle->producto->nombre }}</td>
-                <td class="text-right">S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
-                <td class="text-right">S/ {{ number_format($detalle->subtotal, 2) }}</td>
-            </tr>
-            @endforeach
+            {{-- Si hay división de cuenta, mostrar solo productos pagados --}}
+            @if($comprobante->pagosDetalle && $comprobante->pagosDetalle->count() > 0)
+                @php
+                    // Agrupar pagos por detalle para manejar cantidades correctamente
+                    $pagosPorDetalle = [];
+                    foreach($comprobante->pagosDetalle as $pago) {
+                        if ($pago->detalle) {
+                            $idDetalle = $pago->detalle->id_pedido_detalle;
+                            if (!isset($pagosPorDetalle[$idDetalle])) {
+                                $pagosPorDetalle[$idDetalle] = [
+                                    'detalle' => $pago->detalle,
+                                    'cantidad_total' => 0,
+                                    'monto_total' => 0
+                                ];
+                            }
+                            $pagosPorDetalle[$idDetalle]['cantidad_total'] += $pago->cantidad_item_pagada;
+                            $pagosPorDetalle[$idDetalle]['monto_total'] += $pago->monto_pagado;
+                        }
+                    }
+                @endphp
+                
+                @foreach($pagosPorDetalle as $pagoData)
+                <tr>
+                    <td>{{ $pagoData['cantidad_total'] }}</td>
+                    <td>
+                        @if($pagoData['detalle']->tipo_producto === 'balde_personalizado')
+                            {{ $pagoData['detalle']->nombre_producto_personalizado ?? 'Balde Personalizado' }}
+                        @elseif($pagoData['detalle']->tipo_producto === 'balde_normal')
+                            {{ $pagoData['detalle']->nombre_producto_personalizado ?? 'Balde Normal' }}
+                        @else
+                            {{ $pagoData['detalle']->producto->nombre ?? 'Producto no encontrado' }}
+                        @endif
+                    </td>
+                    <td class="text-right">S/ {{ number_format($pagoData['detalle']->precio_unitario_momento, 2) }}</td>
+                    <td class="text-right">S/ {{ number_format($pagoData['monto_total'], 2) }}</td>
+                </tr>
+                @endforeach
+            {{-- Si NO hay división, mostrar todos los productos del pedido --}}
+            @else
+                @foreach($comprobante->pedido->detalles as $detalle)
+                <tr>
+                    <td>{{ $detalle->cantidad }}</td>
+                    <td>
+                        @if($detalle->tipo_producto === 'balde_personalizado')
+                            {{ $detalle->nombre_producto_personalizado ?? 'Balde Personalizado' }}
+                        @elseif($detalle->tipo_producto === 'balde_normal')
+                            {{ $detalle->nombre_producto_personalizado ?? 'Balde Normal' }}
+                        @else
+                            {{ $detalle->producto->nombre ?? 'Producto no encontrado' }}
+                        @endif
+                    </td>
+                    <td class="text-right">S/ {{ number_format($detalle->precio_unitario_momento, 2) }}</td>
+                    <td class="text-right">S/ {{ number_format($detalle->subtotal, 2) }}</td>
+                </tr>
+                @endforeach
+            @endif
         </tbody>
     </table>
 

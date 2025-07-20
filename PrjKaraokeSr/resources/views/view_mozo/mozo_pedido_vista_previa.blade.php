@@ -306,15 +306,41 @@ document.addEventListener('DOMContentLoaded', function() {
             confirmarEnvioBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
 
             const email = emailInput.value.trim();
-            const comprobanteId = "{{ $comprobante->id_comprobante }}";
-            const dniCorreo = "{{ $comprobante->numero_documento_cliente }}";
+            
+            // CORREGIDO: Obtener el ID del comprobante actual desde la URL
+            const urlPath = window.location.pathname;
+            const comprobanteIdMatch = urlPath.match(/\/factura\/(\d+)\/vista-previa/);
+            const comprobanteId = comprobanteIdMatch ? comprobanteIdMatch[1] : "{{ $comprobante->id_comprobante }}";
+            
+            // CORREGIDO: Obtener el DNI del comprobante actual desde el DOM
+            const dniElementText = document.querySelector('strong').nextSibling;
+            let dniCorreo = "{{ $comprobante->numero_documento_cliente }}";
+            
+            // Intentar extraer el DNI del contenido actual de la página
+            try {
+                const clienteSection = document.querySelector('.mb-3');
+                const clienteText = clienteSection.textContent;
+                const dniMatch = clienteText.match(/(?:DNI|RUC):\s*(\w+)/);
+                if (dniMatch && dniMatch[1]) {
+                    dniCorreo = dniMatch[1];
+                }
+            } catch (e) {
+                console.log('No se pudo obtener DNI del DOM, usando valor por defecto');
+            }
 
             const formData = new FormData();
             formData.append('email', email);
-            formData.append('dni_correo', dniCorreo);
+            formData.append('dni_correo', dniCorreo || 'Sin documento');
             formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
             const enviarUrl = "{{ route('factura.enviar_correo', ':comprobante_id') }}".replace(':comprobante_id', comprobanteId);
+            
+            console.log('Enviando correo con datos actualizados:', {
+                comprobanteId: comprobanteId,
+                email: email,
+                dni_correo: dniCorreo,
+                url: enviarUrl
+            });
 
             const modalBody = document.querySelector('#confirmacionModal .modal-body');
             modalBody.innerHTML = `

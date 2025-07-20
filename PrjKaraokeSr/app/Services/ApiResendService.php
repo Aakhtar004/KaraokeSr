@@ -16,8 +16,19 @@ class ApiResendService
     {
         $this->apiKey = env('RESEND_API_KEY');
         
+        // Verificación temporal para debugging
+        Log::info('Resend API Key Debug', [
+            'key_exists' => !is_null($this->apiKey),
+            'key_empty' => empty($this->apiKey),
+            'key_length' => $this->apiKey ? strlen($this->apiKey) : 0,
+            'key_starts_with' => $this->apiKey ? substr($this->apiKey, 0, 3) : 'null'
+        ]);
+        
         if (empty($this->apiKey)) {
-            Log::error('Resend API key not found in .env file');
+            Log::error('Resend API key not found in .env file', [
+                'env_value' => $this->apiKey,
+                'all_env_keys' => array_keys($_ENV)
+            ]);
             throw new \Exception('Resend API key not configured');
         }
     }

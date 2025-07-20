@@ -28,7 +28,7 @@ class controller_mesero extends Controller
         // Excluir pedidos que ya tienen comprobante (facturados)
         $pedidos = pedidos::with(['mesa', 'comprobante', 'detalles'])
             ->where('id_usuario_mesero', $idUsuario)
-            // ->whereDoesntHave('comprobante') // Sirve para solo mostrar pedidos SIN comprobante
+            ->whereDoesntHave('comprobante') // Sirve para solo mostrar pedidos sin comprobante
             ->orderBy('fecha_hora_pedido', 'desc')
             ->get();
 
@@ -95,15 +95,15 @@ class controller_mesero extends Controller
                     'id_producto' => 'balde_' . $cerveza->id_producto,
                     'nombre' => 'Balde ' . str_replace(' pequeña', '', $cerveza->nombre),
                     'descripcion' => 'Balde de 6 cervezas ' . $cerveza->nombre,
-                    'precio_unitario' => $cerveza->precio_unitario * 6,
+                    'precio_unitario' => 60.00, // PRECIO FIJO
                     'stock' => $stockBaldes,
                     'estado' => 1,
                     'categoria' => ['nombre' => 'Baldes'],
                     'area_destino' => 'bar',
                     'cerveza_base_id' => $cerveza->id_producto,
                     'es_balde' => true,
-                    'imagen_url' => $cerveza->imagen_url, // AGREGADO: Usar imagen de la cerveza base
-                    'unidad_medida' => 'unidad' // AGREGADO: Para evitar otros errores
+                    'imagen_url' => $cerveza->imagen_url,
+                    'unidad_medida' => 'unidad'
                 ];
                 $baldesProductos->push((object)$baldeProducto);
             }
@@ -130,7 +130,7 @@ class controller_mesero extends Controller
         $productosArray = $productos->toArray();
         $baldesArray = $baldesProductos->toArray();
         
-        // Combinar usando array_merge y luego convertir a colección
+        // Combinar usando array_merge y luego convertir a coleção
         $todosProductos = collect(array_merge($productosArray, $baldesArray));
 
         // Filtrar productos según su categoría - CORREGIDO
@@ -241,13 +241,13 @@ class controller_mesero extends Controller
                         }
                         
                         // Calcular precio total y generar nombre
-                        $precioTotal = 0;
+                        $precioTotal = 60.00; // PRECIO FIJO INDEPENDIENTE DE LAS CERVEZAS
                         $nombresBalde = [];
-                        
+
                         foreach ($configuracionBalde as $cervezaId => $config) {
                             $cerveza = productos::find($cervezaId);
                             if ($cerveza) {
-                                $precioTotal += $config['precio'] * $config['cantidad'];
+                                // SOLO para el nombre ya no se suman precios
                                 $nombresBalde[] = $config['cantidad'] . 'x ' . $cerveza->nombre;
                                 
                                 // Validar stock
@@ -288,7 +288,7 @@ class controller_mesero extends Controller
                         }
                         
                         $nombreBalde = 'Balde ' . str_replace(' pequeña', '', $cervezaBase->nombre);
-                        $precioUnitario = $cervezaBase->precio_unitario * 6; // CAMBIADO: 6 cervezas, no 5
+                        $precioUnitario = 60.00; // PRECIO FIJO
                         $subtotal = $precioUnitario * $cantidad;
                         
                         $pedidosTemp[] = [
@@ -810,7 +810,7 @@ class controller_mesero extends Controller
                     'id_producto' => 'balde_' . $cerveza->id_producto,
                     'nombre' => 'Balde ' . str_replace(' pequeña', '', $cerveza->nombre),
                     'descripcion' => 'Balde de 6 cervezas ' . $cerveza->nombre,
-                    'precio_unitario' => $cerveza->precio_unitario * 6,
+                    'precio_unitario' => 60.00, // PRECIO FIJO
                     'stock' => $stockBaldes,
                     'estado' => 1,
                     'categoria' => ['nombre' => 'Baldes'],

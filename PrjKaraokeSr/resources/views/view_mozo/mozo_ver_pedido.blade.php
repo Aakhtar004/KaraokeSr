@@ -58,7 +58,7 @@
             @foreach($pedido->detalles as $detalle)
                 <div class="d-flex justify-content-between align-items-center mb-3 p-2 border-bottom">
                     <div class="flex-grow-1">
-                        {{-- NOMBRE DEL PRODUCTO - CORREGIDO PARA BALDES --}}
+                        {{-- NOMBRE DEL PRODUCTO ESTABLECIDO PARA BALDES --}}
                         <h6 class="mb-1">
                             @if($detalle->tipo_producto === 'balde_personalizado')
                                 {{ $detalle->nombre_producto_personalizado }}

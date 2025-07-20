@@ -475,13 +475,7 @@ function calcularTotalCervezas() {
 // Función para actualizar totales del balde
 function actualizarTotalBalde() {
     const totalCervezas = calcularTotalCervezas();
-    let precioTotal = 0;
-    
-    document.querySelectorAll('.cerveza-cantidad').forEach(input => {
-        const cantidad = parseInt(input.value);
-        const precio = parseFloat(input.dataset.precio);
-        precioTotal += cantidad * precio;
-    });
+    const precioTotal = 60.00; // PRECIO FIJO
     
     document.getElementById('totalCervezas').textContent = totalCervezas;
     document.getElementById('precioTotal').textContent = precioTotal.toFixed(2);

@@ -256,8 +256,8 @@ class controller_cartadigital extends Controller
                 $stockBaldes = intval($cerveza->stock / 6);
                 if ($stockBaldes > 0) {
                     $nombreBalde = 'Balde ' . str_replace(' pequeña', '', $cerveza->nombre);
-                    $precioUnitario = $cerveza->precio_unitario * 6;
-                    
+                    $precioUnitario = 60.00; // PRECIO FIJO
+
                     $baldeProducto = (object)[
                         'id_producto' => 'balde_' . $cerveza->id_producto,
                         'nombre' => $nombreBalde,
@@ -268,16 +268,10 @@ class controller_cartadigital extends Controller
                         'categoria' => (object)['nombre' => 'Baldes'],
                         'area_destino' => 'bar',
                         'es_balde' => true,
-                        'imagen_url' => null, // Sin imagen específica, usará el icono
+                        'imagen_url' => null,
                         'unidad_medida' => 'Balde'
                     ];
                     $baldesGenerados->push($baldeProducto);
-                    
-                    Log::info('Balde generado:', [
-                        'nombre' => $nombreBalde,
-                        'precio' => $precioUnitario,
-                        'stock_baldes' => $stockBaldes
-                    ]);
                 }
             }
 
@@ -288,8 +282,8 @@ class controller_cartadigital extends Controller
                     'id_producto' => 'balde_personalizado',
                     'nombre' => 'Balde Personalizado',
                     'descripcion' => 'Elige hasta 6 cervezas pequeñas para tu balde',
-                    'precio_unitario' => 0,
-                    'stock' => 999, // Siempre disponible si hay cervezas
+                    'precio_unitario' => 60.00, // PRECIO FIJO
+                    'stock' => 999,
                     'estado' => 1,
                     'categoria' => (object)['nombre' => 'Baldes'],
                     'area_destino' => 'bar',
